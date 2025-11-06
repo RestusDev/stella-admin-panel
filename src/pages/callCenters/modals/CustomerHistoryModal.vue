@@ -481,17 +481,15 @@
 
           <!-- Totals -->
           <div class="mt-2 space-y-1 text-xs">
-            <div v-if="order.discount > 0" class="border-b pb-1">
               <div class="flex justify-end gap-16">
                 <span class="font-semibold">SubTotal:</span>
                 <span class="font-bold">€ {{ order.subtotal.toFixed(2) }}</span>
-              </div>
             </div>
 
-            <div v-if="order.discount > 0" class="border-b pb-1">
+            <div v-if="getPromoForOrder(order)" class="border-b pb-1">
               <div class="flex justify-end gap-16">
-                <span class="font-semibold">Discount Amount:</span>
-                <span class="font-bold">-€ {{ order.discount.toFixed(2) }}</span>
+                <span class="font-semibold">{{ getPromoForOrder(order).label }}</span>
+                <span class="font-bold">{{ getPromoForOrder(order).amount }}</span>
               </div>
             </div>
 
@@ -954,6 +952,63 @@ const editSelected = async (orderId) => {
 
   emits('close')
 }
+const eur = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'EUR' });
+
+const titleize = (s = "") =>
+  s.replace(/[_-]+/g, " ")
+   .toLowerCase()
+   .replace(/\b\w/g, c => c.toUpperCase());
+
+const TYPE_LABELS = {
+  TAKE_X_PAY_Y: "Take X Pay Y",
+  PERCENTAGE_DISCOUNT: "Percentage Discount",
+  VALUE_DISCOUNT: "Value Discount",
+};
+
+const toNum = (v) => (v == null || v === '' ? 0 : Number(v));
+
+const first = (...vals) => vals.find(v => toNum(v) > 0) ?? 0;
+
+const getPromoForOrder = (order) => {
+  if (!order) return null;
+
+  const p = order.promotion || {};
+  const typeKey = (p.type || order.discountType || "").toString();
+  const typeName = TYPE_LABELS[typeKey] || (typeKey ? titleize(typeKey) : "");
+
+  // %: pull from promotion first; fall back to order.* only if type looks percentage
+  const looksPercent = /percent/i.test(typeKey);
+  const percentRaw = first(
+    p.discountPercent,
+    order.discountPercentage,
+    looksPercent ? order.discount : 0
+  );
+
+  // € amount: ALWAYS prefer promotion.discountValue; then a dedicated amount if you ever add it;
+  // finally derive from subtotal/total as a last resort (only if % exists).
+  const derived = Math.max(0, toNum(order.subtotal) + toNum(order.deliveryFee) - toNum(order.total));
+  const amountRaw = first(
+    p.discountValue,
+    order.discountAmount,          // optional future field
+    percentRaw > 0 ? derived : 0   // last resort so we don't show nonsense
+  );
+
+  // Nothing meaningful?
+  if (amountRaw <= 0 && percentRaw <= 0 && !typeName) return null;
+
+  // Build "Type · €Value · %", hiding % when 0
+  const parts = [];
+  if (typeName) parts.push(typeName);
+  if (amountRaw > 0) parts.push(eur.format(amountRaw));
+  if (percentRaw > 0) parts.push(`${percentRaw}%`);
+
+  return {
+    label: `Discount (${parts.join(' · ')})`,
+    amount: amountRaw > 0 ? eur.format(-Math.abs(amountRaw)) : eur.format(0), // right side: negative
+    detail: null,
+  };
+};
+
 
 const repeatOrder = async (orderId) => {
   const order = orders.value.find((o) => o._id === orderId)
