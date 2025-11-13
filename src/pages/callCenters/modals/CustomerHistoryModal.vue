@@ -265,8 +265,7 @@
               v-if="
                 !isCancelled(order, index) &&
                 (
-                  (index === 0 && ['kds','preparing'].includes(String(orderStatuses || '').toLowerCase())) ||
-                  order.status === 'Completed'
+                  (index === 0 && ['kds','preparing'].includes(String(orderStatuses || '').toLowerCase())) 
                 )                
               "
               size="small"
@@ -1035,25 +1034,45 @@ const cancelOrder = async (orderId) => {
 
 // ---------- Promo display (Type · €Value · %; hide % when 0) ----------
 const getPromoForOrder = (order) => {
-  if (!order) return null;
-  const p = order.promotion || {};
-  const typeKey = (p.type || order.discountType || "").toString();
-  const typeName = TYPE_LABELS[typeKey] || (typeKey ? titleize(typeKey) : "");
-  const looksPercent = /percent/i.test(typeKey);
-  const percentRaw = first(p.discountPercent, order.discountPercentage, looksPercent ? order.discount : 0);
-  const derived = Math.max(0, toNum(order.subtotal) + toNum(order.deliveryFee) - toNum(order.total));
-  const amountRaw = first(p.discountValue, order.discountAmount, percentRaw > 0 ? derived : 0);
-  if (amountRaw <= 0 && percentRaw <= 0 && !typeName) return null;
-  const parts = [];
-  if (typeName) parts.push(typeName);
-  if (amountRaw > 0) parts.push(eur.format(amountRaw));
-  if (percentRaw > 0) parts.push(`${percentRaw}%`);
+  if (!order) return null
+
+  // ✅ Only show discount if the order actually has a promotionCode
+  if (!order.promotionCode) return null
+
+  const p = order.promotion || {}
+  const typeKey = (p.type || order.discountType || '').toString()
+  const typeName = TYPE_LABELS[typeKey] || (typeKey ? titleize(typeKey) : '')
+
+  // Raw values from DB
+  const discountValueRaw = toNum(first(order.discount, p.discountValue, order.discountAmount))
+  const discountPercentRaw = toNum(first(order.discountPercentage, p.discountPercent))
+
+  // If we only have a percent, derive value from the totals
+  let discountValue = discountValueRaw
+  if (discountValue <= 0 && discountPercentRaw > 0) {
+    const gap = toNum(order.subtotal) + toNum(order.deliveryFee) - toNum(order.total)
+    if (gap > 0) discountValue = gap
+  }
+
+  // If we still have nothing, don't show a row
+  if (discountValue <= 0 && discountPercentRaw <= 0) return null
+
+  // Build label: "Type · €Value · %"
+  const parts = []
+  if (typeName) parts.push(typeName)
+  if (discountValue > 0) parts.push(eur.format(discountValue))
+  if (discountPercentRaw > 0) parts.push(`${discountPercentRaw}%`)
+
+  if (!parts.length) return null
+
   return {
     label: `Discount (${parts.join(' · ')})`,
-    amount: amountRaw > 0 ? eur.format(-Math.abs(amountRaw)) : eur.format(0),
+    // Show a negative amount, e.g. "-€5.00"
+    amount: discountValue > 0 ? eur.format(-Math.abs(discountValue)) : eur.format(0),
     detail: null,
-  };
+  }
 }
+
 
 // ---------- Status / formatting ----------
 const formatDateTime = (dateStr) => {
