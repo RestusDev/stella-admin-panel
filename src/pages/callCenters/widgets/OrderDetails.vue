@@ -48,7 +48,6 @@
           :max-rows="4"
           class="block !h-auto"
           style="width: calc(100% - 32px);"
-          @input="autoGrow"
         />
       </div>
 
@@ -240,7 +239,7 @@
             <div class="flex justify-between font-bold text-xs pt-1 border-t">
               <span v-if="orderStore.editOrder">
                 Total
-                <span class="text-green-600"> · PAID €{{ orderStore.editOrder.editOrderTotal.toFixed(2) }}</span>
+                <span class="text-green-600"> · PAID €{{ (orderStore.editOrder.editOrderTotal || 0).toFixed(2) }}</span>
               </span>
               <span v-else>Total</span>
               <span v-if="orderStore.editOrder">€{{ getTotalPrice }}</span>
@@ -269,7 +268,7 @@
             <div class="flex justify-between font-bold text-xs pt-1 border-t">
               <span v-if="orderStore.editOrder">
                 Total
-                <span class="text-green-600"> · PAID €{{ orderStore.editOrder.editOrderTotal.toFixed(2) }}</span>
+                <span class="text-green-600"> · PAID €{{ (orderStore.editOrder.editOrderTotal || 0).toFixed(2) }}</span>
               </span>
               <span v-else>Total</span>
               <span v-if="orderStore.editOrder">€{{ getTotalPrice }}</span>

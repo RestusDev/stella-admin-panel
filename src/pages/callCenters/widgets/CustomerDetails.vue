@@ -338,6 +338,7 @@
       :delivery-fee="selectedZoneDetails?.deliveryCharge || 0"
       :selected-tab="selectedTab"
       @close="showHistoryModal = false"
+      @repeat-order="handleRepeatOrder"
     />
   </div>
 </template>
@@ -382,6 +383,31 @@ const selectedZoneDetails = ref(null)
 const orderFor = ref('current')
 const showConfirmRemove = ref(false)
 const showHistoryModal = ref(false)
+
+function handleRepeatOrder({ items, offersItems }) {
+  // Clear existing cart items
+  orderStore.cartItems = []
+  orderStore.offerItems = []
+  orderStore.cartTotal = null
+  orderStore.editOrder = null
+  orderStore.validation = null
+
+  // Add new items
+  if (items && items.length) {
+    items.forEach((item) => {
+      orderStore.addItemToCart(item)
+      const newIndex = orderStore.cartItems.length - 1
+      orderStore.calculateItemTotal(newIndex)
+    })
+  }
+
+  // Add new offers
+  if (offersItems && offersItems.length) {
+    offersItems.forEach((offer) => {
+      orderStore.offersAdded(offer)
+    })
+  }
+}
 
 function handleRemoveCustomer() {
   // Check if order has items

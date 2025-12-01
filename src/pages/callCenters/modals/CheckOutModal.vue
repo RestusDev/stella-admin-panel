@@ -497,6 +497,7 @@ async function checkPaymentStatus(requestId: string, paymentId: string) {
 }
 
 async function updateOrder() {
+  apiLoading.value = true
   const url = import.meta.env.VITE_API_BASE_URL
   const userStore = useUsersStore()
   const existingMenuItems: any[] = []
@@ -513,56 +514,56 @@ async function updateOrder() {
     }
   })
 
-  if (existingMenuItems.length) {
-    await Promise.all(
-      existingMenuItems.map((item) => {
-        const data = {
-          menuItems: [
-            {
-              menuItem: item,
-              quantity: 1,
-              options: (orderStore.editOrder.menuItems.find((m: any) => m._id === item)?.options || []).map(
-                (op: any) => ({
-                  option: typeof op.option === 'string' ? op.option : String(op.option?._id),
-                  quantity: Number(op.quantity ?? 1),
-                }),
-              ),
-            },
-          ],
-        }
-        return applyOrderEdit(orderStore.editOrder._id, 'delete', orderStore.editOrder.tableNumber, data)
-      }),
-    )
-  }
-
-  // --- CHANGED: batch & dedupe offer deletes into ONE call ---
-  if (existingOffers.length) {
-    const uniq = Array.from(new Map(existingOffers.map((o: any) => [o.offerId, o])).values())
-    const payload = {
-      offerMenuItems: uniq.map((o: any) => ({ offerId: o.offerId, quantity: 1 })),
-    }
-    await applyOrderEdit(orderStore.editOrder._id, 'delete', orderStore.editOrder.tableNumber, payload)
-  }
-  // --- END CHANGE ---
-
-  const offerMenuItems = orderStore.offerItems.map((offer: any) => ({
-    offerId: offer.offerId,
-    menuItems: offer.selections.flatMap((selection: any) =>
-      selection.addedItems.map((item: any) => ({
-        menuItem: item.itemId,
-        quantity: item.quantity || 1,
-        options:
-          item.selectedOptions?.flatMap((group: any) =>
-            group.selected.map((option: any) => ({
-              option: option.optionId,
-              quantity: option.quantity,
-            })),
-          ) || [],
-      })),
-    ),
-  }))
-
   try {
+    if (existingMenuItems.length) {
+      await Promise.all(
+        existingMenuItems.map((item) => {
+          const data = {
+            menuItems: [
+              {
+                menuItem: item,
+                quantity: 1,
+                options: (orderStore.editOrder.menuItems.find((m: any) => m._id === item)?.options || []).map(
+                  (op: any) => ({
+                    option: typeof op.option === 'string' ? op.option : String(op.option?._id),
+                    quantity: Number(op.quantity ?? 1),
+                  }),
+                ),
+              },
+            ],
+          }
+          return applyOrderEdit(orderStore.editOrder._id, 'delete', orderStore.editOrder.tableNumber, data)
+        }),
+      )
+    }
+
+    // --- CHANGED: batch & dedupe offer deletes into ONE call ---
+    if (existingOffers.length) {
+      const uniq = Array.from(new Map(existingOffers.map((o: any) => [o.offerId, o])).values())
+      const payload = {
+        offerMenuItems: uniq.map((o: any) => ({ offerId: o.offerId, quantity: 1 })),
+      }
+      await applyOrderEdit(orderStore.editOrder._id, 'delete', orderStore.editOrder.tableNumber, payload)
+    }
+    // --- END CHANGE ---
+
+    const offerMenuItems = orderStore.offerItems.map((offer: any) => ({
+      offerId: offer.offerId,
+      menuItems: offer.selections.flatMap((selection: any) =>
+        selection.addedItems.map((item: any) => ({
+          menuItem: item.itemId,
+          quantity: item.quantity || 1,
+          options:
+            item.selectedOptions?.flatMap((group: any) =>
+              group.selected.map((option: any) => ({
+                option: option.optionId,
+                quantity: option.quantity,
+              })),
+            ) || [],
+        })),
+      ),
+    }))
+
     const res = await axios.post(
       `${url}/order-edits/${orderStore.editOrder._id}/apply`,
       {
@@ -603,6 +604,7 @@ async function updateOrder() {
   } catch (err: any) {
     console.error('Order edit failed:', err)
     init({ message: err.response.data.message, color: 'danger' })
+    apiLoading.value = false
     throw err
   }
 }
