@@ -1348,8 +1348,113 @@ onMounted(async () => {
 })
 
 // Placeholder stubs (already exist elsewhere in your codebase)
-const repeatOrder = () => {}
-const addItemsToOrder = () => {}
+const repeatOrder = async (orderId) => {
+  const order = orders.value.find((o) => o._id === orderId)
+  if (!order) return
+
+  // 1. Process Menu Items
+  const items = (order.menuItems || []).map((menuItem) => {
+    return {
+      orderId,
+      itemId: menuItem._id,
+      itemName: menuItem.menuItem,
+      basePrice: parseFloat(menuItem.price) || 0,
+      totalPrice: 0,
+      imageUrl: menuItem.imageUrl || '',
+      promotionCode: menuItem.promotionCode || '',
+      isRepeatedOrder: true,
+      quantity: menuItem.quantity,
+      isFree: !!menuItem.isFree,
+      selectedOptions: (menuItem.articlesOptionsGroup || [])
+        .map((group) => {
+          const selected = (group.articlesOptions || [])
+            .filter((opt) => opt && opt.selected)
+            .map((opt) => ({
+              ...opt,
+              optionId: opt._id,
+              optionName: opt.name,
+              price: parseFloat(opt.price) || 0,
+              type: opt.type,
+              quantity: opt.quantity || 1,
+            }))
+          if (!selected.length) return null
+          return {
+            groupId: group._id,
+            groupName: group.name,
+            categoryId:
+              menuItem.categories && menuItem.categories.length > 0
+                ? menuItem.categories[0].id
+                : null,
+            menuItemId: menuItem._id,
+            selected,
+          }
+        })
+        .filter(Boolean),
+    }
+  })
+
+  // 2. Process Offers
+  const offersItems = (order.offerDetails || [])
+    .map((offer) => {
+      // The 'structuredOffer' was built in fetchOrders
+      if (offer.structuredOffer && offer.structuredOffer.selections) {
+        let selectionTotal = 0
+        offer.structuredOffer.selections.forEach((item) => {
+          item.addedItems.forEach((addedItem) => {
+            selectionTotal += (Number(addedItem.basePrice) || 0) * (Number(addedItem.quantity) || 1)
+            ;(addedItem.selectedOptions || []).forEach((group) => {
+              (group.selected || []).forEach((selection) => {
+                selectionTotal += (Number(selection.price) || 0) * (Number(selection.quantity) || 1)
+              })
+            })
+          })
+        })
+        
+        return {
+          ...offer.structuredOffer,
+          _id: offer.offerId,
+          offerId: offer.offerId,
+          basePrice: offer.structuredOffer.price,
+          selectionTotalPrice: selectionTotal,
+          totalPrice: Number(offer.structuredOffer.price || 0) + selectionTotal,
+          quantity: 1,
+        }
+      }
+      return null
+    })
+    .filter(Boolean)
+
+  emits('repeat-order', { items, offersItems })
+  emits('close')
+  init({ message: 'Order items added to basket', color: 'success' })
+}
+const addItemsToOrder = (orderId) => {
+  const order = orders.value.find((o) => o._id === orderId)
+  if (!order) return
+
+  const orderStore = useOrderStore()
+  
+  // Reset and prepare edit context similar to editSelected
+  orderStore.resetEditOrder()
+  orderStore.setCartItems([])
+  orderStore.offerItems = []
+  orderStore.cartTotal = null
+  orderStore.validation = null
+
+  // Attach _editContext (empty for pure add) and set as editOrder
+  const orderForStore = {
+    ...order,
+    editOrderTotal: order.totalAmount || 0, // Ensure this property exists as used in CheckOutModal
+    _editContext: {
+      originalMenuItems: [],
+      originalOffersToDelete: [],
+    },
+  }
+  orderStore.addEditOrder(orderForStore)
+
+  emits('close')
+  init({ message: 'Order set to edit mode. Add new items.', color: 'success' })
+}
 
 </script>
 
