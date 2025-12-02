@@ -209,6 +209,14 @@ export const useOrderStore = defineStore('order', {
       const url = import.meta.env.VITE_API_BASE_URL
       return await axios.put(`${url}/payments/verify/${orderId}?paymentTypeId=${paymentTypeId}`)
     },
+    async getOrderStatus(orderId: string) {
+      const url = import.meta.env.VITE_API_BASE_URL
+      return await axios.get(`${url}/orders/${orderId}/status`)
+    },
+    async cancelOrder(orderId: string) {
+      const url = import.meta.env.VITE_API_BASE_URL
+      return await axios.put(`${url}/orders/${orderId}/cancel`)
+    },
     async createPayment({ orderId: orderId, paymentTypeId: paymentTypeId }) {
       const url = import.meta.env.VITE_API_BASE_URL
       const next = window.location.href
@@ -222,11 +230,11 @@ export const useOrderStore = defineStore('order', {
         orderFor: orderFor,
       })
     },
-    async retryPayment(orderId) {
+    async retryPayment(orderId, paymentTypeId) {
       const url = import.meta.env.VITE_API_BASE_URL
       const next = window.location.href
 
-      return await axios.post(`${url}/payments/retry/${orderId}`, { next })
+      return await axios.post(`${url}/payments/retry/${orderId}?paymentTypeId=${paymentTypeId}`, { next })
     },
 
     // --- additions inside `actions: { ... }` ---

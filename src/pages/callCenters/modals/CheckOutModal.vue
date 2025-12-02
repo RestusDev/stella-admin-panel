@@ -193,21 +193,52 @@
         </div>
 
         <div class="action-container">
-          <button
-            id="confirmBtn"
-            :disabled="apiLoading || !selectedPayment"
-            class="btn btn-primary"
-            @click="orderStore.editOrder ? updateOrder() : createOrder()"
-          >
-            <span v-if="!apiLoading" id="btnText">
-              {{ orderId && selectedPayment?.name.includes('Card') ? 'Retry Payment' : 'Payment' }}
-            </span>
-            <div v-if="apiLoading" id="loadingSpinner" class="loading-spinner animate-spin"></div>
-          </button>
+          <div class="flex gap-2 w-full justify-end">
+            <button
+              v-if="orderId"
+              class="btn btn-flat-danger mr-2"
+              :disabled="apiLoading"
+              @click="cancelOrder()"
+            >
+              Cancel Order
+            </button>
+            <button
+              id="confirmBtn"
+              :disabled="apiLoading || !selectedPayment"
+              class="btn btn-primary"
+              @click="orderStore.editOrder ? updateOrder() : createOrder()"
+            >
+              <span v-if="!apiLoading" id="btnText">
+                {{ orderId && selectedPayment?.name.includes('Card') ? 'Retry Payment' : 'Payment' }}
+              </span>
+              <div v-if="apiLoading" id="loadingSpinner" class="loading-spinner animate-spin"></div>
+            </button>
+          </div>
         </div>
       </div>
-      <div v-else class="col-span-2 flex items-center bg-white">
-        <iframe :src="redirectUrl" width="100%" height="100%" />
+      <div v-else class="col-span-2 flex flex-col bg-white h-full">
+        <div class="flex-grow relative">
+          <iframe :src="redirectUrl" width="100%" height="100%" class="border-none" />
+        </div>
+        <div class="p-4 border-t border-gray-200 flex justify-between items-center bg-gray-50">
+          <span class="text-sm text-gray-500">
+            Payment in progress...
+          </span>
+          <div class="flex gap-2">
+            <button
+              class="btn btn-flat-danger text-sm px-4 py-2"
+              @click="cancelOrder()"
+            >
+              Cancel Order
+            </button>
+            <button
+              class="btn btn-secondary text-sm px-4 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+              @click="manualRetry()"
+            >
+              Problems? Retry
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </VaModal>
@@ -340,26 +371,7 @@ watch(
   },
   { immediate: true },
 )
-function setInter() {
-  checkInterval.value = setInterval(() => {
-    const iframe = document.querySelector('iframe')
-    if (iframe && iframe.contentWindow) {
-      try {
-        const currentUrl = iframe.contentWindow.location.href
-        if (currentUrl.includes('loader')) {
-          checkPaymentStatus(orderId.value, selectedPayment.value.paymentTypeId)
-          resetInter()
-          apiLoading.value = false
-        }
-      } catch (e) {
-        // Handle cross-origin errors silently
-      }
-    }
-  }, 2000)
-}
-function resetInter() {
-  clearInterval(checkInterval.value)
-}
+
 const subtotal = computed(() => {
   return (
     orderStore.cartItems.reduce((acc, item) => acc + item.totalPrice, 0) +
@@ -460,39 +472,139 @@ function linePromoCart(item: any, idx: number) {
 /** ------------------------------------------------------------------------------ */
 
 async function checkPaymentStatus(requestId: string, paymentId: string) {
-  const response = await orderStore.checkPaymentStatus(requestId, paymentId)
-  if (response.data.data.status === 'Completed') {
-    init({
-      color: 'success',
-      message: 'Payment Success',
-    })
-    if (orderFor.value === 'current') {
+  // 1. Try standard payment verification (existing flow)
+  try {
+    const response = await orderStore.checkPaymentStatus(requestId, paymentId)
+    if (response.data.data.status === 'Completed') {
+      handlePaymentSuccess()
+      return
+    }
+  } catch (e) {
+    // ignore error, proceed to check order status directly
+  }
+
+  // 2. Fallback: check order status directly (new flow)
+  try {
+    const orderRes = await orderStore.getOrderStatus(requestId)
+    const status = orderRes.data.data.status // "Completed" | "In Progress" | "Cancelled"
+
+    if (status === 'Completed') {
+      handlePaymentSuccess()
+    } else if (status === 'In Progress') {
+      // Payment flow finished (iframe returned) but status is still In Progress => Failed/Unpaid
+      init({
+        color: 'danger',
+        message: 'Payment not completed. Please retry or cancel.',
+      })
+      orderStore.setPaymentLink('') // Hide iframe
+      // UI will show "Retry Payment" because orderId exists
+    } else if (status === 'Cancelled') {
+      init({ color: 'warning', message: 'Order was cancelled.' })
+      orderStore.setPaymentLink('')
+      emits('cancel')
+    }
+  } catch (err: any) {
+    console.error('Status check failed', err)
+    init({ color: 'danger', message: 'Could not verify payment status.' })
+    orderStore.setPaymentLink('')
+  }
+}
+
+function handlePaymentSuccess() {
+  init({
+    color: 'success',
+    message: 'Payment Success',
+  })
+  if (orderFor.value === 'current') {
+    try {
+      init({
+        color: 'success',
+        message: 'Order sent to Winmax',
+      })
+      setTimeout(() => {
+        orderStore.cartItems = []
+        window.location.reload()
+      }, 800)
+    } catch (err: any) {
+      init({
+        color: 'danger',
+        message: err.response?.data?.error || 'Error finishing order',
+      })
+      // Even if winmax fails, order is paid. We might want to reload or close.
+      setTimeout(() => {
+        window.location.reload()
+      }, 2000)
+    }
+  }
+}
+
+function setInter() {
+  checkInterval.value = setInterval(() => {
+    const iframe = document.querySelector('iframe')
+    if (iframe && iframe.contentWindow) {
       try {
-        //await orderStore.sendOrderToWinmax(requestId, orderFor.value)
-        init({
-          color: 'success',
-          message: 'Order sent to Winmax',
-        })
-        setTimeout(() => {
-          orderStore.cartItems = []
-          window.location.reload()
-        }, 800)
-      } catch (err: any) {
-        init({
-          color: 'danger',
-          message: err.response.data.error,
-        })
-        orderStore.setPaymentLink('')
-        orderResponse.value = ''
-        orderId.value = ''
+        const currentUrl = iframe.contentWindow.location.href
+        // Check if we are back on our domain (or specific success/fail URL indicators)
+        // If we can read currentUrl, we are likely back on same origin.
+        if (currentUrl) { 
+           // We are back!
+           checkPaymentStatus(orderId.value, selectedPayment.value.paymentTypeId)
+           resetInter()
+           apiLoading.value = false
+        }
+      } catch (e) {
+        // Cross-origin: still on gateway. Do nothing.
       }
     }
-  } else {
-    init({
-      color: 'danger',
-      message: response.data.message,
-    })
+  }, 2000)
+}
+
+function resetInter() {
+  clearInterval(checkInterval.value)
+}
+
+async function cancelOrder() {
+  if (!orderId.value) return
+  try {
+    apiLoading.value = true
+    // Use new cancel endpoint
+    await orderStore.cancelOrder(orderId.value)
+    
+    init({ color: 'info', message: 'Order cancelled' })
+    
+    // Reset everything by reloading, similar to success flow
+    setTimeout(() => {
+      orderStore.cartItems = []
+      window.location.reload()
+    }, 800)
+  } catch (e) {
+    console.error(e)
+    init({ color: 'danger', message: 'Failed to cancel order' })
+  } finally {
+    apiLoading.value = false
+  }
+}
+
+async function manualRetry() {
+  // Check status one last time in case it actually went through
+  try {
+    apiLoading.value = true
+    const orderRes = await orderStore.getOrderStatus(orderId.value)
+    const status = orderRes.data.data.status
+
+    if (status === 'Completed') {
+      handlePaymentSuccess()
+      return
+    } else {
+      // If In Progress or Cancelled, just reset the view so they can try again
+      init({ color: 'warning', message: 'Payment not confirmed. You can try again.' })
+      orderStore.setPaymentLink('')
+    }
+  } catch (e) {
+    // If check fails, just let them retry
     orderStore.setPaymentLink('')
+  } finally {
+    apiLoading.value = false
   }
 }
 
@@ -774,7 +886,7 @@ const codes = normalizeCodes(props.promoCode, props.promoCodes)
 
     let response: any = ''
     if (orderId.value) {
-      response = await orderStore.retryPayment(orderId.value)
+      response = await orderStore.retryPayment(orderId.value, selectedPayment.value?.paymentTypeId)
     } else {
       orderResponse.value = await orderStore.createOrder(payload)
       response = await orderStore.createPayment({

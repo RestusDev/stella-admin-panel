@@ -280,8 +280,9 @@
               v-if="
                 !isCancelled(order, index) &&
                 (
-                  (index === 0 && ['kds','preparing','onrack'].includes(String(orderStatuses || '').toLowerCase())) ||
-                  order.status === 'Completed'
+                  (index === 0 && ['kds','preparing','onrack', 'in progress'].includes(String(orderStatuses || '').toLowerCase())) ||
+                  order.status === 'Completed' ||
+                  order.status === 'In Progress'
                 )
               "
               size="small"
@@ -340,7 +341,7 @@
         <!-- EXPANDABLE ARTICLE LIST -->
         <div v-if="expandedIndex === index" class="bg-white px-6 pb-4 border-t border-gray-200">
          <div
-  v-for="(offer, idx) in order.offerDetails || []"
+  v-for="(offer, idx) in order.offerDetails || []"              
   :key="idx"
   class="flex flex-col justify-between py-2 border-b last:border-none relative"
   :class="{
@@ -348,16 +349,16 @@
     'hover:bg-gray-50 cursor-pointer':
       index === 0 &&
       !isCancelled(order, index) &&
-      (orderStatuses === 'kds' || orderStatuses === 'preparing' || orderStatuses === 'onrack'),
+      (orderStatuses === 'kds' || orderStatuses === 'preparing' || orderStatuses === 'onrack' || orderStatuses === 'In Progress'),
     'opacity-60 cursor-not-allowed':
       index !== 0 ||
       isCancelled(order, index) ||
-      !(orderStatuses === 'kds' || orderStatuses === 'preparing' || orderStatuses === 'onrack'),
+      !(orderStatuses === 'kds' || orderStatuses === 'preparing' || orderStatuses === 'onrack' || orderStatuses === 'In Progress'),
   }"
   @click="
     index === 0 &&
     !isCancelled(order, index) &&
-    (orderStatuses === 'kds' || orderStatuses === 'preparing' || orderStatuses === 'onrack') &&
+    (orderStatuses === 'kds' || orderStatuses === 'preparing' || orderStatuses === 'onrack'|| orderStatuses === 'In Progress') &&
     toggleOfferSelection(order._id, idx)
   "
 >
@@ -365,7 +366,7 @@
     v-if="
       index !== 0 ||
       isCancelled(order, index) ||
-      !(orderStatuses === 'kds' || orderStatuses === 'preparing' || orderStatuses === 'onrack')
+      !(orderStatuses === 'kds' || orderStatuses === 'preparing' || orderStatuses === 'onrack' || orderStatuses === 'In Progress')
     "
     class="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400"
   >
@@ -1028,7 +1029,18 @@ const editSelected = async (orderId) => {
 const cancelOrder = async (orderId) => {
   const order = orders.value.find((o) => o._id === orderId)
   if (!order) return
-  await applyOrderEdit(orderId, 'cancel', order.tableNumber)
+  if (order.status === 'In Progress') {
+    const orderStore = useOrderStore()
+    try {
+      await orderStore.cancelOrder(orderId)
+      init({ message: 'Order cancelled successfully', color: 'success' })
+    } catch (err) {
+      console.error(err)
+      init({ message: 'Failed to cancel order', color: 'danger' })
+    }
+  } else {
+    await applyOrderEdit(orderId, 'cancel', order.tableNumber)
+  }
   fetchOrders()
 }
 
