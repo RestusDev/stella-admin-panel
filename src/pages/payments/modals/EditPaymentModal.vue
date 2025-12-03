@@ -66,10 +66,24 @@
       </div>
 
       <!-- Submit Button -->
-      <div class="flex justify-end mt-3">
+      <div class="flex justify-end mt-3 gap-2">
+        <VaButton
+          v-if="isUpdating && formData.paymentGateway === 'WalleePOS'"
+          color="secondary"
+          @click="showWalleeConfig = true"
+        >
+          Configure Wallee
+        </VaButton>
         <VaButton type="submit" :disabled="isSubmitDisabled">{{ isUpdating ? 'Update' : 'Add' }}</VaButton>
       </div>
     </VaForm>
+
+    <WalleeConfigModal
+      v-if="showWalleeConfig"
+      :outlet-id="servicesStore.selectedRest"
+      :payment-type-id="formData.paymentTypeId"
+      @cancel="showWalleeConfig = false"
+    />
   </VaModal>
 </template>
 
@@ -79,6 +93,7 @@ import axios from 'axios'
 import { validators } from '@/services/utils'
 import { useForm, useToast } from 'vuestic-ui'
 import { useServiceStore } from '@/stores/services'
+import WalleeConfigModal from './WalleeConfigModal.vue'
 
 const emits = defineEmits(['cancel'])
 const props = defineProps({
@@ -91,6 +106,7 @@ const props = defineProps({
 const { validate } = useForm('form')
 const { init } = useToast()
 const servicesStore = useServiceStore()
+const showWalleeConfig = ref(false)
 
 // Form data
 const formData = ref({
@@ -122,6 +138,24 @@ const getPaymentconfig = () => {
       ...e,
       inputConfig: e.inputConfig.map((config) => ({ ...config, value: config.default || '' })),
     }))
+
+    // --- Manual Wallee Injection ---
+    if (!paymentGateway.value.find((p) => p.value === 'WalleePOS')) {
+      paymentGateway.value.push({ text: 'WalleePOS', value: 'WalleePOS' })
+    }
+
+    if (!paymentOptions.value.find((p) => p.paymentMethodName === 'WalleePOS')) {
+      paymentOptions.value.push({
+        paymentMethodName: 'WalleePOS',
+        inputConfig: [
+          { name: 'TERMINAL_IP', label: 'Terminal IP', type: 'text', required: true, value: '' },
+          { name: 'TERMINAL_PORT', label: 'Terminal Port', type: 'number', required: true, value: 50000 },
+          { name: 'POS_ID', label: 'POS ID', type: 'text', required: true, value: '' },
+          { name: 'CURRENCY', label: 'Currency', type: 'text', required: true, value: 'EUR' },
+        ],
+      })
+    }
+    // -------------------------------
 
     // If updating, load selected payment
     if (props.selectedPayment && props.selectedPayment._id) {
@@ -163,15 +197,21 @@ const submit = async () => {
     let data = JSON.parse(JSON.stringify(formData.value))
 
     // Build paymentGatewayConfig only if gateway selected
-    const paymentGatewayConfig = selectedGateway
-      ? Object.fromEntries(selectedGateway.inputConfig.map((input) => [input.name, input.value]))
-      : {}
+    const getConfig = (gateway) => {
+      if (!gateway) return {}
+      return Object.fromEntries(
+        gateway.inputConfig.map((input) => {
+          const val = input.value
+          // Cast to number if type is number
+          return [input.name, input.type === 'number' ? Number(val) : val]
+        })
+      )
+    }
 
     data = {
       ...data,
-      paymentGatewayConfig: selectedGateway
-        ? Object.fromEntries(selectedGateway.inputConfig.map((input) => [input.name, input.value]))
-        : {},
+      outletId: servicesStore.selectedRest,
+      paymentGatewayConfig: getConfig(selectedGateway),
     }
 
     // Remove unnecessary fields

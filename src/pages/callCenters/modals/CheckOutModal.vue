@@ -193,7 +193,7 @@
         </div>
 
         <div class="action-container">
-          <div class="flex gap-2 w-full justify-end">
+          <div class="flex gap-2 w-full justify-center">
             <button
               v-if="orderId"
               class="btn btn-flat-danger mr-2"
@@ -221,7 +221,8 @@
           <iframe :src="redirectUrl" width="100%" height="100%" class="border-none" />
         </div>
         <div class="p-4 border-t border-gray-200 flex justify-between items-center bg-gray-50">
-          <span class="text-sm text-gray-500">
+          <span class="text-sm text-gray-500 flex items-center gap-2">
+            <div class="loading-spinner !border-gray-300 !border-t-gray-600"></div>
             Payment in progress...
           </span>
           <div class="flex gap-2">
@@ -471,26 +472,59 @@ function linePromoCart(item: any, idx: number) {
 }
 /** ------------------------------------------------------------------------------ */
 
-async function checkPaymentStatus(requestId: string, paymentId: string) {
-  // 1. Try standard payment verification (existing flow)
-  try {
-    const response = await orderStore.checkPaymentStatus(requestId, paymentId)
-    if (response.data.data.status === 'Completed') {
-      handlePaymentSuccess()
-      return
+async function checkPaymentStatus(requestId: string, paymentId: string, isPolling = false) {
+  // 1. Try standard payment verification (existing flow) - SKIP IF POLLING
+  if (!isPolling) {
+    try {
+      const response = await orderStore.checkPaymentStatus(requestId, paymentId)
+      console.log('Payment Verify Response:', response)
+
+      const responseData = response.data?.data || response.data || {}
+      console.log('Payment Verify Data:', responseData)
+
+      // Explicit WalleePOS handling: Close and clean data without reload
+      const gateway = responseData.gateway || ''
+      const isWallee = /wallee/i.test(gateway)
+      const isDeviceSuccess = responseData.raw?.kind === 'deviceSuccess'
+      
+      if ((isWallee || isDeviceSuccess) && responseData.status === 'Completed') {
+        console.log('WalleePOS/Device Success Detected - Triggering Success Handler')
+        handlePaymentSuccess()
+        return
+      }
+
+      if (responseData.status === 'Completed') {
+        handlePaymentSuccess()
+        return
+      }
+    } catch (e) {
+      // ignore error, proceed to check order status directly
     }
-  } catch (e) {
-    // ignore error, proceed to check order status directly
   }
 
   // 2. Fallback: check order status directly (new flow)
   try {
-    const orderRes = await orderStore.getOrderStatus(requestId)
-    const status = orderRes.data.data.status // "Completed" | "In Progress" | "Cancelled"
+    // Prefer the original order ID if available (orderId.value might be payment request ID)
+    const actualOrderId = orderResponse.value?.data?.data?._id || requestId
+    const orderRes = await orderStore.getOrderStatus(actualOrderId)
+    const responseData = orderRes.data?.data || orderRes.data || {}
+    const status = responseData.status // "Completed" | "In Progress" | "Cancelled"
+
+    // Explicit WalleePOS handling for GET response
+    const gateway = responseData.gateway || ''
+    const isWallee = /wallee/i.test(gateway)
+    const isDeviceSuccess = responseData.raw?.kind === 'deviceSuccess'
+
+    if ((isWallee || isDeviceSuccess) && status === 'Completed') {
+      console.log('WalleePOS/Device Success Detected (GET) - Triggering Success Handler')
+      handlePaymentSuccess()
+      return
+    }
 
     if (status === 'Completed') {
       handlePaymentSuccess()
     } else if (status === 'In Progress') {
+      if (isPolling) return
       // Payment flow finished (iframe returned) but status is still In Progress => Failed/Unpaid
       init({
         color: 'danger',
@@ -540,6 +574,11 @@ function handlePaymentSuccess() {
 
 function setInter() {
   checkInterval.value = setInterval(() => {
+    // Active polling for all payment types (handles WalleePOS/Terminal cases without iframe redirect)
+    if (orderId.value && selectedPayment.value) {
+      checkPaymentStatus(orderId.value, selectedPayment.value.paymentTypeId, true)
+    }
+
     const iframe = document.querySelector('iframe')
     if (iframe && iframe.contentWindow) {
       try {
