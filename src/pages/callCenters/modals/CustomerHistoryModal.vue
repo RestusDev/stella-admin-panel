@@ -673,10 +673,12 @@
     :user-name="addressModalCustomer?.Name || ''"
     :user-number="addressModalCustomer?.Phone || ''"
     :outlet="outlet"
+    :delivery-zone-id="orders.find(o => o._id === pendingSwitchOrderId)?.deliveryZoneId"
     :is-selection-mode="true"
     @selectAddress="handleAddressSelection"
     @close="showAddressModal = false"
     @cancel="showAddressModal = false"
+    @saved="fetchHistory()"
   />
 
   <!-- Reschedule Modal -->
