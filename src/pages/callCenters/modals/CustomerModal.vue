@@ -37,59 +37,60 @@
             <div v-if="address.length" class="mt-4">
               <label class="text-sm font-medium text-gray-500">Saved Addresses</label>
               <div ref="addressListRef" class="overflow-y-auto max-h-[200px] pr-1 custom-scroll">
-                <div
-                  v-for="(addr, index) in address"
-                  :key="index"
-                  ref="addressItems"
-                  :ref="(el) => (addressItems.value[index] = el)"
-                  :class="[
-                    'flex items-center justify-between mt-1 px-4 py-2 rounded border text-gray-500 cursor-pointer',
-                    editAddress === index ? 'bg-yellow-100 border-yellow-500' : (isSelectionMode && selectedAddressObj === addr ? 'bg-blue-50 border-blue-200' : 'bg-[#f8f9fa]'),
-                  ]"
-                  @click="isSelectionMode ? (selectedAddressObj = addr) : null"
-                >
-                  <!-- Selection Radio (manual implementation) -->
-                  <div v-if="isSelectionMode" class="mr-3 flex items-center">
-                    <CircleDot v-if="selectedAddressObj === addr" class="w-5 h-5 text-blue-600" />
-                    <Circle v-else class="w-5 h-5 text-gray-400" />
-                  </div>
+                <template v-for="(addr, index) in address" :key="index">
+                  <div
+                    v-if="!fetchedZones || !fetchedZones.length || isAddressInZone(addr)"
+                    ref="addressItems"
+                    :ref="(el) => (addressItems.value[index] = el)"
+                    :class="[
+                      'flex items-center justify-between mt-1 px-4 py-2 rounded border text-gray-500 cursor-pointer',
+                      editAddress === index ? 'bg-yellow-100 border-yellow-500' : (isSelectionMode && selectedAddressObj === addr ? 'bg-blue-50 border-blue-200' : 'bg-[#f8f9fa]'),
+                    ]"
+                    @click="isSelectionMode ? (selectedAddressObj = addr) : null"
+                  >
+                    <!-- Selection Radio (manual implementation) -->
+                    <div v-if="isSelectionMode" class="mr-3 flex items-center">
+                      <CircleDot v-if="selectedAddressObj === addr" class="w-5 h-5 text-blue-600" />
+                      <Circle v-else class="w-5 h-5 text-gray-400" />
+                    </div>
 
-                  <div v-if="addr.designation && addr.designation.startsWith('Meet')">
-                    <span>
-                      <strong>{{ addr.designation }}</strong>
-                    </span>
-                  </div>
-                  <div v-else>
-                    <span v-if="addr.designation" class="font-bold uppercase">{{ addr.designation }} - </span>
-                    <span v-if="addr.aptNo">{{ addr.aptNo }},</span>
-                    <span v-if="addr.floor">{{ addr.floor }},</span>
-                    <span v-if="addr.streetName || addr.streetNo">{{ addr.streetName }} {{ addr.streetNo }},</span>
-                    <span v-if="addr.district">{{ addr.district }}</span>
-                    <span v-if="addr.city">,{{ addr.city }}</span>
-                    <span v-if="addr.postCode">,{{ addr.postCode }}</span>
-                  </div>
+                    <div v-if="addr.designation && addr.designation.startsWith('Meet')">
+                      <span>
+                        <strong>{{ addr.designation }}</strong>
+                      </span>
+                    </div>
+                    <div v-else>
+                      <span v-if="addr.designation" class="font-bold uppercase">{{ addr.designation }} - </span>
+                      <span v-if="addr.aptNo">{{ addr.aptNo }},</span>
+                      <span v-if="addr.floor">{{ addr.floor }},</span>
+                      <span v-if="addr.streetName || addr.streetNo">{{ addr.streetName }} {{ addr.streetNo }},</span>
+                      <span v-if="addr.district">{{ addr.district }}</span>
+                      <span v-if="addr.city">,{{ addr.city }}</span>
+                      <span v-if="addr.postCode">,{{ addr.postCode }}</span>
+                    </div>
 
-                  <!-- Action Buttons -->
-                  <div class="flex gap-1 ml-auto">
-                    <!-- Edit Button -->
-                    <VaButton
-                      preset="secondary"
-                      size="small"
-                      icon="mso-edit"
-                      aria-label="Edit Address"
-                      @click="editAddressFields(addr, index)"
-                    />
-                    <!-- Delete Button -->
-                    <!-- <VaButton
-                      preset="danger"
-                      color="danger"
-                      size="small"
-                      icon="mso-delete"
-                      aria-label="Delete Address"
-                      @click="deleteAddress(index)"
-                    /> -->
+                    <!-- Action Buttons -->
+                    <div class="flex gap-1 ml-auto">
+                      <!-- Edit Button -->
+                      <VaButton
+                        preset="secondary"
+                        size="small"
+                        icon="mso-edit"
+                        aria-label="Edit Address"
+                        @click="editAddressFields(addr, index)"
+                      />
+                      <!-- Delete Button -->
+                      <!-- <VaButton
+                        preset="danger"
+                        color="danger"
+                        size="small"
+                        icon="mso-delete"
+                        aria-label="Delete Address"
+                        @click="deleteAddress(index)"
+                      /> -->
+                    </div>
                   </div>
-                </div>
+                </template>
               </div>
             </div>
           </div>
@@ -269,7 +270,116 @@ const props = defineProps<{
   outlet: Record<string, any>
   forceUpdateId?: string | null
   isSelectionMode?: boolean
+  deliveryZoneId?: string
 }>()
+
+const fetchedZones = ref<any[]>([])
+
+function isAddressInZone(addr: any) {
+  // If we haven't fetched zones yet or request failed, effectively disable filter (or hide all? User implied strict filtering)
+  // User: "choose an address with a postal code not covered" -> implied we SHOULD hide invalid ones.
+  // If we have no zones, maybe we shouldn't show any addresses? Or show all?
+  // Safest: Show all if catch error, but if success and empty, show none.
+  // Let's assume if fetchedZones is populated, we filter.
+  if (!fetchedZones.value.length) return true 
+  
+  const currentText = (addr.designation || '') + (addr.designation && addr.postCode ? ' ' : '') +  (addr.postCode || '')
+  const postalCode = addr.postCode
+
+  // 1. Try postal code match
+  const matchingZone = fetchedZones.value.find((zone) => {
+     return zone.postalCodes && zone.postalCodes.some((zoneCode: any) => String(zoneCode).trim() === String(postalCode).trim())
+  })
+  if (matchingZone) return true
+
+  // 2. Try meeting point match
+  if (addr.designation && (addr.designation.includes('Meeting') || addr.designation.includes('M.P'))) {
+     for (const zone of fetchedZones.value) {
+        if (!zone.meetingPoints) continue
+        const match = zone.meetingPoints.find((mp: any) => {
+           if (!mp || !mp.designation) return false
+           // Normal match
+           if (currentText.includes(mp.designation)) return true
+           
+           // Abbreviation match
+           try {
+             const abbr = mp.designation.replace(
+                /(Meeting\s*Point)(\s*-\s*)([^-]+)(.*)/i,
+                (_:any, _mp:any, sep:any, mid:any, rest:any) => `M.P${sep}${(mid || '').trim().slice(0, 4)}${rest}`
+             )
+             return currentText.toLowerCase().replace(/\s/g, '').includes(abbr.toLowerCase().replace(/\s/g, ''))
+           } catch { return false }
+        })
+        if (match) return true
+     }
+  }
+
+  return false
+}
+
+// ... existing code ...
+
+const fetchDeliveryZones = async () => {
+    // We need the parent ID (Brand/Portal) to fetch all zones, then find our specific outlet's zone
+    const serviceStore = useServiceStore()
+    const parentId = serviceStore.selectedRest
+    
+    console.log('DEBUG: fetchDeliveryZones Called', {
+        isSelectionMode: props.isSelectionMode,
+        hasOutlet: !!props.outlet,
+        parentId
+    })
+
+    if (!props.isSelectionMode || !props.outlet) {
+        console.log('DEBUG: Returning early due to missing props')
+        return
+    }
+    if (!parentId) {
+        console.log('DEBUG: Returning early due to missing parentId')
+        return
+    }
+
+    try {
+        // Fetch all zones for the brand
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/deliveryZones/${parentId}`)
+        // Handle potentially different response structures (array directly or wrapped in zones)
+        const allZones = response.data?.data?.zones || (Array.isArray(response.data?.data) ? response.data.data : [])
+        
+        // Find the specific zone for THIS outlet (e.g. Lakatamia)
+        // props.outlet contains the specific outlet details
+        // We match by ID first, then Name as fallback
+        
+        console.log('DEBUG: Filter Logic', {
+            parentId,
+            outletProp: props.outlet,
+            deliveryZoneIdProp: props.deliveryZoneId,
+            allZones
+        })
+
+        const targetZone = allZones.find(z => 
+             (props.deliveryZoneId && z._id === props.deliveryZoneId) ||
+             (z._id && props.outlet._id && z._id === props.outlet._id) || 
+             (z.name && props.outlet.name && z.name.toLowerCase() === props.outlet.name.toLowerCase())
+        )
+
+        console.log('DEBUG: Target Zone Found:', targetZone)
+
+        // We only care about the postal codes/meeting points for THIS specific zone
+        fetchedZones.value = targetZone ? [targetZone] : []
+        
+    } catch (e) {
+        console.error('Failed to fetch delivery zones for filtering', e)
+    }
+}
+
+watch(() => props.isSelectionMode, (val) => {
+    if (val) fetchDeliveryZones()
+}, { immediate: true })
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+  if (props.isSelectionMode && (!fetchedZones.value.length)) fetchDeliveryZones()
+})
 
 const addressListRef = ref(null)
 const addressSet = ref(null)
