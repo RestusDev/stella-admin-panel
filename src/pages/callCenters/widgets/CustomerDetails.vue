@@ -200,8 +200,13 @@
               <div class="relative flex items-center gap-1 w-full">
                 <!-- Input-like clickable field -->
                 <div
-                  class="border rounded w-full px-2 py-[5px] text-xs bg-white cursor-pointer hover:bg-gray-50 flex items-center justify-between"
-                  @click="showDeliveryDropdown = !showDeliveryDropdown"
+                  :class="[
+                    'border rounded w-full px-2 py-[5px] text-xs flex items-center justify-between',
+                    isLocationLocked 
+                      ? 'bg-gray-100 cursor-not-allowed opacity-60' 
+                      : 'bg-white cursor-pointer hover:bg-gray-50'
+                  ]"
+                  @click="!isLocationLocked && (showDeliveryDropdown = !showDeliveryDropdown)"
                 >
                   <span>{{ selectedZone || 'Select Location' }}</span>
                   <!-- Unfilled / outlined arrow icon -->
@@ -228,12 +233,12 @@
 
                 <!-- Dropdown -->
                 <div
-                  v-if="showDeliveryDropdown"
+                  v-if="showDeliveryDropdown && !isLocationLocked"
                   class="absolute left-0 top-full max-h-[300px] overflow-y-auto mt-1 w-full text-left bg-white border rounded shadow z-10"
                 >
                   <ul ref="deliveryList" class="text-xs">
                     <li
-                      v-for="(zone, index) in deliveryZoneOptions"
+                      v-for="(zone, index) in filteredDeliveryZones"
                       :key="index"
                       class="px-3 py-2 hover:bg-gray-100 cursor-pointer border border-b-1"
                       :class="{
@@ -283,7 +288,7 @@
             >
               <ul ref="deliveryList" class="text-xs">
                 <li
-                  v-for="(zone, index) in deliveryZoneOptions"
+                  v-for="(zone, index) in filteredDeliveryZones"
                   :key="index"
                   class="px-3 py-2 hover:bg-gray-100 cursor-pointer border border-b-1"
                   :class="{
@@ -894,10 +899,54 @@ function selectUser(user) {
   userResults.value = []
     prefillNotesFromUser(selectedUser.value)
 
+  // Auto-select location if phone number is 1-15
+  autoSelectLocationForShortPhone()
+}
+
+// Auto-select location when phone number is 1-15 based on customer name
+function autoSelectLocationForShortPhone() {
+  const phone = String(phoneNumber.value || '').trim()
+  const phoneNum = Number(phone)
+  
+  // Only apply for phone numbers 1-15
+  if (phone.length <= 2 && phoneNum >= 1 && phoneNum <= 15) {
+    // Wait for delivery zones to be loaded
+    if (!deliveryZoneOptions.value.length) {
+      // Zones not loaded yet, will be handled after they load
+      return
+    }
+    
+    // For now, always select Deftera (zone 15) for phone numbers 1-15
+    const defteraZone = deliveryZoneOptions.value.find(zone => {
+      return Number(zone.serviceZoneId) === 15
+    })
+    
+    if (defteraZone) {
+      selectDeliveryZone(defteraZone)
+    }
+  }
 }
 
 
+
 const deliveryZoneOptions = ref([])
+
+// Check if location should be locked (for phone numbers 1-15)
+const isLocationLocked = computed(() => {
+  const phone = String(phoneNumber.value || '').trim()
+  const phoneNum = Number(phone)
+  return phone.length <= 2 && phoneNum >= 1 && phoneNum <= 15
+})
+
+// Filter delivery zones - for phone 1-15, show only Deftera (zone 15)
+const filteredDeliveryZones = computed(() => {
+  if (!deliveryZoneOptions.value.length) return []
+  
+  // For now, show only Deftera (zone 15) for ALL phone numbers
+  return deliveryZoneOptions.value.filter(zone => {
+    return Number(zone.serviceZoneId) === 15
+  })
+})
 
 function selectDeliveryZone(zone) {
   if (zone) {
@@ -923,6 +972,11 @@ async function handleDeliveryZoneFetch() {
     deliveryZoneOptions.value = response.data.data.sort((a, b) => {
       return Number(a.serviceZoneId) - Number(b.serviceZoneId)
     })
+
+    // Auto-select location if phone is 1-15 and user is already selected
+    if (selectedUser.value) {
+      autoSelectLocationForShortPhone()
+    }
 
     if (!response.data.data.length) {
       selectedZone.value = ''
