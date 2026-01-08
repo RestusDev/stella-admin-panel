@@ -350,7 +350,7 @@
 
 <script setup>
 import { ref, watch, defineEmits, computed, defineExpose, onMounted, onUnmounted, onBeforeUnmount } from 'vue'
-import { useToast, useColors } from 'vuestic-ui'
+import { useToast, useModal } from 'vuestic-ui'
 import axios from 'axios'
 import { useServiceStore } from '@/stores/services.ts'
 import CustomerModal from '../modals/CustomerModal.vue'
@@ -376,6 +376,7 @@ const selectedTab = ref('')
 const isUserLoading = ref(false)
 const selectedAddress = ref('')
 const { init } = useToast()
+const { confirm } = useModal()
 const orderStore = useOrderStore()
 const userStore = useUsersStore() // Instantiate User Store
 const showCustomerModal = ref(false)
@@ -1012,9 +1013,12 @@ function selectDeliveryZone(zone) {
     console.log(`[selectDeliveryZone] Is available for ${currentService} (cc):`, isAvailable)
 
     if (isAvailable === false) {
-      init({
-        color: 'danger',
+      confirm({
         message: `${selectedTab.value === 'takeaway' ? 'Takeaway' : 'Delivery'} not available for this Zone`,
+        okText: 'Close',
+        cancelText: '', // Hide cancel button
+        size: 'small',
+        zIndex: 9999, // Ensure it's on top
       })
       // Clear selection if it was set (or just don't set it)
        selectedZone.value = ''
@@ -1054,9 +1058,12 @@ watch(selectedTab, (newTab) => {
       console.log(`[watcher:selectedTab] Is available for ${newTab} (cc):`, isAvailable)
 
       if (isAvailable === false) {
-          init({
-            color: 'danger',
+          confirm({
             message: `${newTab === 'takeaway' ? 'Takeaway' : 'Delivery'} not available for this Zone`,
+            okText: 'Close',
+            cancelText: '',
+            size: 'small',
+            zIndex: 9999,
           })
           // Clear invalid selection
           selectedZone.value = ''
