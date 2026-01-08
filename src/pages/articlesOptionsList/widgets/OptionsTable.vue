@@ -363,7 +363,7 @@ function formatPrice(value) {
               class="editable-input"
               autofocus
               @blur="
-                rowData.editName = false
+                rowData.editName = false;
                 updateData(rowData)
               "
             />
@@ -387,7 +387,7 @@ function formatPrice(value) {
               class="editable-input"
               autofocus
               @blur="
-                rowData.editPOSName = false
+                rowData.editPOSName = false;
                 updateData(rowData)
               "
             />
@@ -411,7 +411,7 @@ function formatPrice(value) {
               class="editable-input"
               autofocus
               @blur="
-                rowData.editCode = false
+                rowData.editCode = false;
                 updateData(rowData)
               "
             />
@@ -469,8 +469,8 @@ function formatPrice(value) {
                 :key="option.key || option"
                 class="px-3 py-1.5 text-sm text-slate-700 hover:bg-blue-50 cursor-pointer text-center transition-colors duration-150"
                 @click="
-                  rowData.type = option.key || option
-                  updateData(rowData)
+                  rowData.type = option.key || option;
+                  updateData(rowData);
                   rowData.showTypeDropdown = false
                 "
               >
@@ -490,7 +490,7 @@ function formatPrice(value) {
               class="editable-input"
               autofocus
               @blur="
-                rowData.editPrice = false
+                rowData.editPrice = false;
                 updateData(rowData)
               "
             />
@@ -525,7 +525,7 @@ function formatPrice(value) {
               class="editable-input"
               autofocus
               @blur="
-                rowData.editMinimumChoices = false
+                rowData.editMinimumChoices = false;
                 updateData(rowData)
               "
             />
@@ -550,7 +550,7 @@ function formatPrice(value) {
               class="editable-input"
               autofocus
               @blur="
-                rowData.editMaximumChoices = false
+                rowData.editMaximumChoices = false;
                 updateData(rowData)
               "
             />

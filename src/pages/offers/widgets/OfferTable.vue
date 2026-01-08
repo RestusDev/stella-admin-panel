@@ -543,7 +543,7 @@ function formatReadableDate(dateStr: string): string {
               class="editable-input"
               autofocus
               @blur="
-                rowData.editName = false
+                rowData.editName = false;
                 updateData(rowData)
               "
             />
@@ -572,7 +572,7 @@ function formatReadableDate(dateStr: string): string {
               rows="3"
               autofocus
               @blur="
-                rowData.editDescription = false
+                rowData.editDescription = false;
                 updateData(rowData)
               "
             />
@@ -601,7 +601,7 @@ function formatReadableDate(dateStr: string): string {
               type="text"
               autofocus
               @blur="
-                rowData.editCode = false
+                rowData.editCode = false;
                 updateData(rowData)
               "
             />
@@ -630,7 +630,7 @@ function formatReadableDate(dateStr: string): string {
               type="text"
               autofocus
               @blur="
-                rowData.editPrice = false
+                rowData.editPrice = false;
                 updateData(rowData)
               "
             />
