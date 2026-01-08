@@ -364,7 +364,7 @@ import MenuModal from '../modals/MenuModal.vue'
 import CheckOutModal from '../modals/CheckOutModal.vue'
 import OfferModal from '../modals/OfferModal.vue'
 import axios from 'axios'
-import { useToast } from 'vuestic-ui'
+import { useToast, useModal } from 'vuestic-ui'
 import PromotionModal from '../modals/PromotionModal.vue'
 
 const props = defineProps({
@@ -492,10 +492,12 @@ const isServiceRestricted = computed(() => {
 
 function showRestrictedMessage() {
   const type = props.orderType === 'takeaway' ? 'Takeaway' : 'Delivery'
-  init({
-    color: 'danger',
+  confirm({
     message: `${type} not available for this Zone`,
-    closeable: true,
+    okText: 'Close',
+    cancelText: '',
+    size: 'small',
+    zIndex: 9999,
   })
 }
 
@@ -832,6 +834,7 @@ const showMenuModal = ref(false)
 const isEdit = ref(false)
 const isLoading = ref(false)
 const { init } = useToast()
+const { confirm } = useModal()
 
 async function openPromotionModal() {
   const url = import.meta.env.VITE_API_BASE_URL
