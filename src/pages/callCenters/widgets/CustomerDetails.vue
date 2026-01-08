@@ -357,6 +357,7 @@ import CustomerModal from '../modals/CustomerModal.vue'
 import ConfirmRemoveCustomerDetails from '../modals/ConfirmRemoveCustomerDetails.vue'
 import CustomerHistoryModal from '../modals/CustomerHistoryModal.vue'
 import { useOrderStore } from '@/stores/order-store'
+import { useUsersStore } from '@/stores/users' // Import Users Store
 import { onClickOutside } from '@vueuse/core'
 const props = defineProps(['forceRemount'])
 const emits = defineEmits([
@@ -376,6 +377,7 @@ const isUserLoading = ref(false)
 const selectedAddress = ref('')
 const { init } = useToast()
 const orderStore = useOrderStore()
+const userStore = useUsersStore() // Instantiate User Store
 const showCustomerModal = ref(false)
 const serviceZoneId = ref('')
 const phoneNumber = ref('')
@@ -1082,6 +1084,14 @@ async function handleDeliveryZoneFetch() {
 
     deliveryZoneOptions.value = response.data.data
       .filter((zone) => zone.isActive !== false) // Filter out inactive zones
+      .filter((zone) => {
+        // Filter by allowedDeliveryZoneIds if present
+        const allowed = userStore.userDetails?.allowedDeliveryZoneIds
+        if (allowed && allowed.length > 0) {
+          return allowed.includes(zone._id) || allowed.includes(zone.id)
+        }
+        return true
+      })
       .sort((a, b) => {
         return Number(a.serviceZoneId) - Number(b.serviceZoneId)
       })
@@ -1091,7 +1101,13 @@ async function handleDeliveryZoneFetch() {
       autoSelectLocationForShortPhone()
     }
 
-    if (!response.data.data.length) {
+    // Auto-select if user is restricted to exactly one zone
+    const allowed = userStore.userDetails?.allowedDeliveryZoneIds
+    if (allowed && allowed.length > 0 && deliveryZoneOptions.value.length === 1) {
+       selectDeliveryZone(deliveryZoneOptions.value[0])
+    }
+
+    if (!deliveryZoneOptions.value.length) {
       selectedZone.value = ''
       if (selectedTab.value === 'delivery') {
         serviceZoneId.value = ''
