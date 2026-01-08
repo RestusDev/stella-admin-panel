@@ -347,7 +347,7 @@ function onButtonEditOptionGroupArticles(rowData) {
               class="editable-input"
               autofocus
               @blur="
-                rowData.editName = false
+                rowData.editName = false;
                 updateData(rowData)
               "
             />
@@ -375,7 +375,7 @@ function onButtonEditOptionGroupArticles(rowData) {
               class="editable-input"
               autofocus
               @blur="
-                rowData.editInternalName = false
+                rowData.editInternalName = false;
                 updateData(rowData)
               "
             />
@@ -403,7 +403,7 @@ function onButtonEditOptionGroupArticles(rowData) {
               class="editable-input"
               autofocus
               @blur="
-                rowData.editDescription = false
+                rowData.editDescription = false;
                 updateData(rowData)
               "
             />
@@ -453,8 +453,8 @@ function onButtonEditOptionGroupArticles(rowData) {
                 :key="option.key || option"
                 class="px-3 py-1.5 text-sm text-slate-700 hover:bg-blue-50 cursor-pointer text-center transition-colors duration-150"
                 @click="
-                  rowData.type = option.key || option
-                  updateData(rowData)
+                  rowData.type = option.key || option;
+                  updateData(rowData);
                   rowData.showTypeDropdown = false
                 "
               >
@@ -492,7 +492,7 @@ function onButtonEditOptionGroupArticles(rowData) {
               class="editable-input"
               type="number"
               @blur="
-                rowData.editMinimumChoices = false
+                rowData.editMinimumChoices = false;
                 updateData(rowData)
               "
             />
@@ -519,7 +519,7 @@ function onButtonEditOptionGroupArticles(rowData) {
               class="editable-input"
               type="number"
               @blur="
-                rowData.editMaximumChoices = false
+                rowData.editMaximumChoices = false;
                 updateData(rowData)
               "
             />
@@ -621,8 +621,8 @@ function onButtonEditOptionGroupArticles(rowData) {
       v-if="isEditArticleOptionGroupsModal"
       :selected-option-groups="selectedOptionGroups"
       @cancel="
-        isEditArticleOptionGroupsModal = false
-        selectedOptionGroups = ''
+        isEditArticleOptionGroupsModal = false;
+        selectedOptionGroups = '';
         emits('getOptionGroups', searchQuery)
       "
     />
@@ -630,8 +630,8 @@ function onButtonEditOptionGroupArticles(rowData) {
       v-if="isEditArticleOptionsModal"
       :selected-options="selectedOptions"
       @cancel="
-        isEditArticleOptionsModal = false
-        selectedOptions = ''
+        isEditArticleOptionsModal = false;
+        selectedOptions = '';
         emits('getOptionGroups', searchQuery)
       "
     />
@@ -639,8 +639,8 @@ function onButtonEditOptionGroupArticles(rowData) {
       v-if="isEditArticleOptionGroupsItemsModal"
       :selected-option-group="selectedItems"
       @cancel="
-        isEditArticleOptionGroupsItemsModal = false
-        selectedItems = ''
+        isEditArticleOptionGroupsItemsModal = false;
+        selectedItems = '';
         emits('getOptionGroups', searchQuery)
       "
     />
@@ -648,8 +648,8 @@ function onButtonEditOptionGroupArticles(rowData) {
       v-if="isEditOptionGroupArticlesModal"
       :selected-items="selectedItems"
       @cancel="
-        isEditOptionGroupArticlesModal = false
-        selectedItems = ''
+        isEditOptionGroupArticlesModal = false;
+        selectedItems = '';
         emits('getOptionGroups', searchQuery)
       "
     />
