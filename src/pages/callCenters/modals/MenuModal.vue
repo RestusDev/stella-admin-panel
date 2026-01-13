@@ -154,6 +154,12 @@
                     class="rounded w-full h-full"
                   />
                 </div>
+                <div class="flex-1">
+                  <div class="text-sm font-semibold text-gray-800">{{ option.name }}</div>
+                  <div v-if="option.price" class="text-gray-800 font-semibold text-sm mt-1">
+                    €{{ parseFloat(option.price).toFixed(2) }}
+                  </div>
+                </div>
                 <input
                   v-model="selectedOptions[group._id]"
                   :checked="isChecked(group, option._id)"
@@ -162,7 +168,6 @@
                   :value="option._id"
                   class="absolute bottom-2 right-2 accent-gray-700 pointer-events-none"
                 />
-                
 
               </label>
 
@@ -203,7 +208,39 @@
                   </div>
                 </div>
 
+                <div class="absolute bottom-1 right-2 flex items-center gap-1">
+                  <p v-if="option.price" class="text-xs text-gray-600 font-medium mr-1">
+                    €{{ parseFloat(option.price).toFixed(2) }}
+                  </p>
 
+                  <button
+                    class="w-5 h-5 text-xs font-bold border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50"
+                    :disabled="
+                      getQty(group._id, option._id) === 0 || option.inStock === false || option.name?.toUpperCase().includes('OUT OF STOCK')
+                    "
+                    @click="() => updateMultipleChoice(group, option, getQty(group._id, option._id) - 1)"
+                  >
+                    -
+                  </button>
+                  <span class="w-4 text-center text-xs">{{ getQty(group._id, option._id) }}</span>
+                  <button
+                    :title="
+                      getQty(group._id, option._id) >= (option.maximumChoices || group.maximumChoices || 99)
+                        ? 'Max quantity reached'
+                        : option.inStock === false || option.name?.toUpperCase().includes('OUT OF STOCK')
+                          ? 'Out of stock'
+                          : ''
+                    "
+                    class="w-5 h-5 text-xs font-bold border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50"
+                    :disabled="
+                      getQty(group._id, option._id) >= (option.maximumChoices || group.maximumChoices || 99) ||
+                      option.inStock === false || option.name?.toUpperCase().includes('OUT OF STOCK')
+                    "
+                    @click="() => updateMultipleChoice(group, option, getQty(group._id, option._id) + 1)"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
             </div>
           </div>
