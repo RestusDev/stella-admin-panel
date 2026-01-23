@@ -10,14 +10,16 @@ module.exports = {
             instances: 1,
             // Default Environment Variables
             env: {
-                NODE_ENV: "production",
+                NODE_ENV: "dev",
                 VITE_API_BASE_URL: "https://dev-api.stella.cy/api/v1", // Default to dev or prod as preferred
+                VITE_COORD_API_URL: "https://dev-coord.restuspos.com"
+
             },
             // Staging Environment: pm2 start ecosystem.config.js --env staging
             env_staging: {
-                NODE_ENV: "production", // 'serve' is always production usually
+                NODE_ENV: "staging", // 'serve' is always production usually
                 VITE_API_BASE_URL: "https://staging-api.stella.cy/api/v1", // Update this URL
-                VITE_COORD_API_URL: "https://staging-coord.restuspos.com"
+                VITE_COORD_API_URL: "https://dev-coord.restuspos.com"
             },
             watch: false,
             merge_logs: true,
