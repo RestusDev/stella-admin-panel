@@ -16,8 +16,11 @@
             v-for="item in menuItems.sort((a, b) => (selectedArticle && selectedArticle.id === a.id ? -1 : 1))"
             :key="item._id"
             class="pizza-card"
-            :class="{ selected: selectedArticle && selectedArticle.id === item.id }"
-            @click.prevent="selectArticle(item)"
+            :class="{
+              selected: selectedArticle && selectedArticle.id === item.id,
+              'out-of-stock': item.inStock === false || item.name?.toUpperCase().includes('OUT OF STOCK'),
+            }"
+            @click.prevent="item.inStock === false || item.name?.toUpperCase().includes('OUT OF STOCK') ? null : selectArticle(item)"
           >
             <div class="pizza-image"><img :src="item.imageUrl" class="object-fit" /></div>
             <div class="pizza-content">
@@ -31,6 +34,7 @@
               </div>
             </div>
             <div class="selection-status"></div>
+
           </div>
         </div>
       </div>
@@ -54,6 +58,7 @@ import { ref, defineExpose, defineEmits, onMounted } from 'vue'
 import OffersMenuModal from './OffersMenuModal.vue'
 import { useMenuStore } from '@/stores/getMenu'
 import { storeToRefs } from 'pinia'
+import { useToast } from 'vuestic-ui'
 const props = defineProps({
   group: Object,
   selectedMenuItem: Object,
@@ -135,6 +140,10 @@ function selectArticle(article) {
     }
   }
 }
+
+const { init } = useToast()
+
+
 </script>
 
 <style scoped>
@@ -348,4 +357,19 @@ function selectArticle(article) {
     font-size: 13px;
   }
 }
+
+.pizza-card.out-of-stock {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+.pizza-card.out-of-stock:hover {
+  border-color: #e9ecef;
+  background: white;
+  transform: none;
+  box-shadow: none;
+}
+
+
 </style>

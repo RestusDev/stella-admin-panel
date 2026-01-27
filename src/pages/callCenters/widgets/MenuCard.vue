@@ -1,5 +1,5 @@
 <template>
-  <div class="menu-item" @click="getMenuOptions">
+  <div class="menu-item" :class="{ 'out-of-stock': isOutOfStock }" @click="isOutOfStock ? null : getMenuOptions()">
     <div class="item-content" :class="{ 'no-price': !parseFloat(item.price) }">
       <div class="item-name">{{ item.name }}</div>
       <div v-if="parseFloat(item.price)" class="item-price">€{{ parseFloat(item.price).toFixed(2) }}</div>
@@ -14,17 +14,21 @@
       :item="itemWithArticlesOptionsGroups"
       :menu-item-id="item._id"
       :category-id="categoryId"
+      :fetch-configurations="[]"
       @cancel="closeMenuModal"
     />
+
+
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import MenuModal from '../modals/MenuModal.vue'
 import axios from 'axios'
 import { useToast } from 'vuestic-ui'
 import { useOrderStore } from '@/stores/order-store'
+import { useMenuStore } from '@/stores/getMenu'
 
 const props = defineProps({
   item: Object,
@@ -35,8 +39,13 @@ const showMenuModal = ref(false)
 const isLoading = ref(false)
 const itemWithArticlesOptionsGroups = ref({})
 const orderStore = useOrderStore()
+const menuStore = useMenuStore()
 
 const { init } = useToast()
+
+const isOutOfStock = computed(() => {
+  return props.item?.inStock === false || props.item?.name?.toUpperCase().includes('OUT OF STOCK')
+})
 
 function addToBasket(item) {
   const productEntry = {
@@ -59,7 +68,11 @@ const getMenuOptions = async () => {
   const url = import.meta.env.VITE_API_BASE_URL
   isLoading.value = true
   try {
-    const response = await axios.get(`${url}/menuItemvoById/${props.item._id}`)
+    const params = {}
+    if (menuStore.deliveryZoneId) {
+      params.deliveryZoneId = menuStore.deliveryZoneId
+    }
+    const response = await axios.get(`${url}/menuItemvoById/${props.item._id}`, { params })
 
     const articlesOptionsGroups = response.data.articlesOptionsGroups
 
@@ -97,6 +110,7 @@ function closeMenuModal() {
 }
 
 .menu-item {
+  position: relative;
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
@@ -142,6 +156,7 @@ function closeMenuModal() {
   color: #1e293b;
   line-height: 1.3;
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -152,4 +167,15 @@ function closeMenuModal() {
   font-weight: 700;
   color: #2d5d2a;
 }
+
+.out-of-stock {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+.out-of-stock:hover {
+  box-shadow: none;
+  border-color: #e2e8f0;
+}
+
 </style>

@@ -20,6 +20,10 @@ const props = defineProps({
     type: Number,
     default: 0,
   },
+  selectedDeliveryZoneId: {
+    type: String,
+    default: '',
+  },
 })
 
 const subCategoryStore = useSubCategoriesStore()
@@ -41,8 +45,52 @@ const { confirm } = useModal()
 const { init } = useToast()
 const currentPage = ref(1)
 const searchQuery = ref('')
+const stockUpdating = ref(new Set()) // Track which rows are currently updating stock
 const onAddClick = () => {
   emits('addArticle', { adding: true, searchQuery: searchQuery.value, page: currentPage.value })
+}
+
+const toggleStock = async (rowData, event) => {
+  const newValue = event.target.checked
+  console.log('toggleStock called', { selectedDeliveryZoneId: props.selectedDeliveryZoneId, newValue, rowId: rowData._id })
+  
+  // Mark as updating
+  stockUpdating.value.add(rowData._id)
+  
+  if (props.selectedDeliveryZoneId) {
+    // Zone-specific update
+    try {
+      const url = import.meta.env.VITE_API_BASE_URL
+      await axios.patch(`${url}/deliveryZones/${props.selectedDeliveryZoneId}/stock`, {
+        outletId: serviceStore.selectedRest,
+        entityType: 'MenuItem', 
+        entityId: rowData._id,
+        inStock: newValue,
+      })
+      init({ message: `Stock updated for zone: ${newValue ? 'In Stock' : 'Out of Stock'}`, color: 'success' })
+    } catch (err) {
+      rowData.inStock = !newValue // Revert
+      init({ message: 'Failed to update zone stock', color: 'danger' })
+      console.error('Stock update failed', err)
+    } finally {
+      stockUpdating.value.delete(rowData._id)
+    }
+  } else {
+    // Global update via PATCH /menuItems/:id
+    try {
+      const url = import.meta.env.VITE_API_BASE_URL
+      await axios.patch(`${url}/menuItems/${rowData._id}`, {
+        inStock: newValue,
+      })
+      init({ message: `Global stock updated: ${newValue ? 'In Stock' : 'Out of Stock'}`, color: 'success' })
+    } catch (err) {
+      rowData.inStock = !newValue // Revert
+      init({ message: 'Failed to update global stock', color: 'danger' })
+      console.error('Global stock update failed', err)
+    } finally {
+      stockUpdating.value.delete(rowData._id)
+    }
+  }
 }
 const onImportClick = () => {
   emits('importArticle')
@@ -104,15 +152,43 @@ const pages = computed(() => {
   return Math.ceil(props.count / 50)
 })
 
+const getCategoryName = (cat: any) => {
+  // If it's a string (ID), look it up
+  if (typeof cat === 'string') {
+    const found = props.categories.find((c: any) => (c._id === cat || c.id === cat))
+    return found ? found.name : cat
+  }
+  
+  // If it's an object and has a name, use it
+  if (cat?.name && cat.name !== 'SIZE') return cat.name
+
+  // If it's an object but missing name, try looking it up by ID
+  // Prioritize 'id' (foreign key) over '_id' (subdocument id)
+  const id = cat?.id || cat?._id
+  if (id) {
+    const found = props.categories.find((c: any) => (c._id === id || c.id === id))
+    return found ? found.name : ''
+  }
+
+  return ''
+}
+
+const getCategoryKey = (cat: any, index: number) => {
+  if (typeof cat === 'string') return cat
+  return cat?.wCode || cat?._id || cat?.id || index
+}
+
+
 const filteredItems = computed(() => {
   let result = props.items
 
   // Category filter
   if (selectedCategoryFilter.value) {
-    result = result.filter((item) =>
-      item.categories.some(
-        (cat) => cat._id === selectedCategoryFilter.value || cat.id === selectedCategoryFilter.value,
-      ),
+    result = result.filter((item: any) =>
+      item.categories.some((cat: any) => {
+        const id = typeof cat === 'string' ? cat : (cat._id || cat.id)
+        return id === selectedCategoryFilter.value
+      }),
     )
   }
 
@@ -295,8 +371,8 @@ function openFileModal(data) {
         <div class="flex items-center gap-2 flex-shrink-0">
           <h1 class="text-2xl font-semibold text-slate-800 dark:text-slate-100 tracking-tight">Articles</h1>
           <div
-            class="h-9 flex items-center px-3 text-sm font-medium rounded-xl 
-           bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"          >
+            class="h-9 flex items-center px-3 text-sm font-medium rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+          >
             {{ totalVisibleCount }}
           </div>
         </div>
@@ -321,23 +397,18 @@ function openFileModal(data) {
         <div class="flex items-center gap-1">
           <span class="hidden md:inline text-sm font-medium text-slate-700 dark:text-slate-200">Active Only</span>
           <label class="relative inline-block w-9 h-5 cursor-pointer">
-  <input
-    v-model="activeOnly"
-    type="checkbox"
-    class="sr-only"
-  />
-  <!-- Track -->
-  <span
-    class="block rounded-full h-5 w-9 transition-colors duration-300 ease-in-out"
-    :class="activeOnly ? 'bg-emerald-500' : 'bg-slate-300'"
-  ></span>
-  <!-- Thumb -->
-  <span
-    class="absolute left-0 top-0.5 w-4 h-4 bg-white rounded-full shadow transform transition-transform duration-300 ease-in-out"
-    :class="activeOnly ? 'translate-x-4' : 'translate-x-1'"
-  ></span>
-</label>
-
+            <input v-model="activeOnly" type="checkbox" class="sr-only" />
+            <!-- Track -->
+            <span
+              class="block rounded-full h-5 w-9 transition-colors duration-300 ease-in-out"
+              :class="activeOnly ? 'bg-emerald-500' : 'bg-slate-300'"
+            ></span>
+            <!-- Thumb -->
+            <span
+              class="absolute left-0 top-0.5 w-4 h-4 bg-white rounded-full shadow transform transition-transform duration-300 ease-in-out"
+              :class="activeOnly ? 'translate-x-4' : 'translate-x-1'"
+            ></span>
+          </label>
         </div>
 
         <!-- Columns Button -->
@@ -368,16 +439,22 @@ function openFileModal(data) {
               </label>
             </div>
 
-    <div class="flex justify-between mt-4 pt-3 border-t border-slate-100 dark:border-slate-700">
-      <button @click="resetColumnVisibility" class="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
-        Reset
-      </button>
-      <button @click="showColumnsMenu = false" class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">
-        Done
-      </button>
-    </div>
-  </div>
-</div>
+            <div class="flex justify-between mt-4 pt-3 border-t border-slate-100 dark:border-slate-700">
+              <button
+                class="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                @click="resetColumnVisibility"
+              >
+                Reset
+              </button>
+              <button
+                class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+                @click="showColumnsMenu = false"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
 
         <!-- Import Button -->
         <button
@@ -397,7 +474,7 @@ function openFileModal(data) {
           <span class="hidden md:inline">Add Article</span>
         </button>
 
-    <!-- Pagination -->
+        <!-- Pagination -->
         <div class="flex items-center gap-2">
           <VaPagination v-model="currentPage" :pages="pages" buttons-preset="secondary" gapped="20" :visible-pages="3">
             <template #firstPageLink="{ onClick, disabled }">
@@ -438,33 +515,30 @@ function openFileModal(data) {
             </template>
           </VaPagination>
         </div>
-  </div>
-</div>
-        
+      </div>
+    </div>
 
     <!-- TABLE -->
     <div class="flex flex-col h-[calc(100vh-12rem)]">
-    <VaDataTable
-      :columns="columns"
-      :items="filteredItems"
-      :loading="$props.loading"
-      :disable-client-side-sorting="true"
-      :style="{
-        '--va-data-table-thead-background': '#f8fafc',
-        '--va-data-table-thead-color': '#64748b',
-      }"
-      sticky-header
-
-      @update:sortBy="(sortBy) => $emit('sortBy', sortBy)"
-      @update:sortingOrder="(sortDesc) => $emit('sortingOrder', sortDesc)"
-    >
-
-<!-- ID COLUMN (HIDDEN) -->
-<template #cell(id)="{ rowData }">
-        <div class="max-w-[120px] ellipsis">
-          {{ rowData.id }}
-        </div>
-</template>
+      <VaDataTable
+        :columns="columns"
+        :items="filteredItems"
+        :loading="$props.loading"
+        :disable-client-side-sorting="true"
+        :style="{
+          '--va-data-table-thead-background': '#f8fafc',
+          '--va-data-table-thead-color': '#64748b',
+        }"
+        sticky-header
+        @update:sortBy="(sortBy) => $emit('sortBy', sortBy)"
+        @update:sortingOrder="(sortDesc) => $emit('sortingOrder', sortDesc)"
+      >
+        <!-- ID COLUMN (HIDDEN) -->
+        <template #cell(id)="{ rowData }">
+          <div class="max-w-[120px] ellipsis">
+            {{ rowData.id }}
+          </div>
+        </template>
 
         <!-- IMAGE COLUMN -->
         <template #cell(image)="{ rowData }">
@@ -654,13 +728,12 @@ function openFileModal(data) {
           </div>
         </template>
 
-        <!-- CATEGORY COLUMN -->
         <template #cell(category)="{ rowData }">
           <div class="flex flex-col gap-1">
-            <template v-if="rowData.categories.length <= 2">
+            <template v-if="(rowData.categories || []).length <= 2">
               <span
-                v-for="e in rowData.categories"
-                :key="e.wCode"
+                v-for="(e, index) in rowData.categories"
+                :key="getCategoryKey(e, index)"
                 class="inline-block px-3 py-1 text-sm rounded-xl font-medium text-blue-800 bg-blue-100 hover:bg-blue-200 cursor-pointer transition-colors text-center"
                 @click="
                   emits('updateArticleModal', {
@@ -671,13 +744,13 @@ function openFileModal(data) {
                   })
                 "
               >
-                {{ e.name }}
+                {{ getCategoryName(e) }}
               </span>
             </template>
             <template v-else>
               <span
-                v-for="e in rowData.categories.slice(0, 2)"
-                :key="e.wCode"
+                v-for="(e, index) in rowData.categories.slice(0, 2)"
+                :key="getCategoryKey(e, index)"
                 class="inline-block px-3 py-1 text-sm rounded-xl font-medium text-blue-800 bg-blue-100 hover:bg-blue-200 cursor-pointer transition-colors text-center"
                 @click="
                   emits('updateArticleModal', {
@@ -688,7 +761,7 @@ function openFileModal(data) {
                   })
                 "
               >
-                {{ e.name }}
+                {{ getCategoryName(e) }}
               </span>
               <span
                 class="inline-block px-3 py-1 text-sm rounded-xl font-medium text-blue-800 bg-blue-50 cursor-pointer transition-colors text-center"
@@ -896,11 +969,24 @@ function openFileModal(data) {
           <div class="flex justify-center items-center">
             <label class="relative inline-block w-9 h-5 cursor-pointer">
               <input
-                v-model="rowData.isActive"
+                :checked="rowData.isActive"
                 type="checkbox"
                 class="sr-only"
                 @change="
-                  emits('updateArticle', { ...rowData, searchQuery: searchQuery.value, page: currentPage.value })
+                  (e) => {
+                    console.log(
+                      '🎯 Toggle clicked! e.target.checked =',
+                      e.target.checked,
+                      'rowData.isActive =',
+                      rowData.isActive,
+                    )
+                    emits('updateArticle', {
+                      ...rowData,
+                      isActive: e.target.checked,
+                      searchQuery: searchQuery.value,
+                      page: currentPage.value,
+                    })
+                  }
                 "
               />
               <!-- Track -->
@@ -920,14 +1006,15 @@ function openFileModal(data) {
         <!-- STOCK COLUMN -->
         <template #cell(stock)="{ rowData }">
           <div class="flex justify-center items-center">
-            <label class="relative inline-block w-9 h-5 cursor-pointer">
+            <!-- Loading spinner -->
+            <div v-if="stockUpdating.has(rowData._id)" class="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+            <!-- Stock toggle -->
+            <label v-else class="relative inline-block w-9 h-5 cursor-pointer">
               <input
                 v-model="rowData.inStock"
                 type="checkbox"
                 class="sr-only"
-                @change="
-                  emits('updateArticle', { ...rowData, searchQuery: searchQuery.value, page: currentPage.value })
-                "
+                @change="(e) => toggleStock(rowData, e)"
               />
               <!-- Track -->
               <span

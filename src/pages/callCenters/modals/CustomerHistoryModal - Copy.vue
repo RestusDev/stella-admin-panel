@@ -10,97 +10,106 @@
   >
     <!-- HEADER -->
     <h3 class="w-full bg-gray-900 text-white p-6">
-  <div class="flex flex-col md:flex-row md:items-center gap-8 w-full">
-    <!-- LEFT: Title + Customer -->
-    <div class="flex flex-col flex-shrink-0">
-      <span class="text-sm uppercase tracking-wider text-gray-400 pb-1 border-b-2 border-gradient-to-r from-blue-400 via-purple-500 to-pink-500">
-        Order History
-      </span>
+      <div class="flex flex-col md:flex-row md:items-center gap-8 w-full">
+        <!-- LEFT: Title + Customer -->
+        <div class="flex flex-col flex-shrink-0">
+          <span
+            class="text-sm uppercase tracking-wider text-gray-400 pb-1 border-b-2 border-gradient-to-r from-blue-400 via-purple-500 to-pink-500"
+          >
+            Order History
+          </span>
 
-      <span class="text-4xl font-extrabold text-white mt-2 tracking-tight drop-shadow-lg">
-        {{ customer?.Name || 'Unknown' }}
-      </span>
+          <span class="text-4xl font-extrabold text-white mt-2 tracking-tight drop-shadow-lg">
+            {{ customer?.Name || 'Unknown' }}
+          </span>
 
-      <span
-        v-if="customer?.Phone"
-        class="text-2xl text-gray-300 font-bold mt-1">
-        {{ customer.Phone }}
-      </span>
-    </div>
-
-    <!-- CENTER: buttons & stats -->
-    <div class="flex-1 flex items-center justify-center">
-      <div class="flex items-center gap-16 w-full">
-        <!-- Time Period Buttons (2x2) -->
-        <div class="grid grid-cols-2 gap-3">
-          <button
-  v-for="period in ['1 Month', '6 Months', '12 Months', 'All Time']"
-  :key="period"
-  @click="selectedPeriod = period"
-  :class="[
-    'px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-300',
-    selectedPeriod === period
-      ? 'bg-gray-300 text-black'
-      : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
-  ]"
->
-  {{ period }}
-</button>
-
+          <span v-if="customer?.Phone" class="text-2xl text-gray-300 font-bold mt-1">
+            {{ customer.Phone }}
+          </span>
         </div>
 
-        <!-- Stats grid -->
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-6 text-gray-300 w-full">
-          <div class="bg-gray-800 bg-opacity-30 rounded-xl p-3 flex flex-col items-start hover:shadow-neon transition">
-  <span class="text-sm font-bold mb-1 text-blue-400">Last Ordered:</span>
-  <span class="text-lg font-semibold">
-    {{ lastOrdered.daysAgo }}
-    <span class="text-xs text-gray-400">{{ lastOrdered.fullDate }}</span>
-  </span>
-</div>  
-<div class="bg-gray-800 bg-opacity-30 rounded-xl p-3 flex flex-col items-start hover:shadow-neon transition">
-  <span class="text-sm font-bold mb-1 text-purple-400">Total:</span>
-  <span class="text-lg font-semibold">
-    € {{ totalStats.total.toFixed(2) }}
-    <span class="text-xs text-gray-400">({{ totalStats.count }} Orders)</span>
-  </span>
-</div>
+        <!-- CENTER: buttons & stats -->
+        <div class="flex-1 flex items-center justify-center">
+          <div class="flex items-center gap-16 w-full">
+            <!-- Time Period Buttons (2x2) -->
+            <div class="grid grid-cols-2 gap-3">
+              <button
+                v-for="period in ['1 Month', '6 Months', '12 Months', 'All Time']"
+                :key="period"
+                :class="[
+                  'px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-300',
+                  selectedPeriod === period
+                    ? 'bg-gray-300 text-black'
+                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white',
+                ]"
+                @click="selectedPeriod = period"
+              >
+                {{ period }}
+              </button>
+            </div>
 
-<div class="bg-gray-800 bg-opacity-30 rounded-xl p-3 flex flex-col items-start hover:shadow-neon transition">
-  <span class="text-sm font-bold mb-1 text-pink-400">Average Order:</span>
-  <span class="text-lg font-semibold">
-    € {{ averageOrder.average.toFixed(2) }}
-    <span class="text-xs text-gray-400">({{ averageOrder.avgItems.toFixed(0) }} Items)</span>
-  </span>
-</div>
-          <div class="bg-gray-800 bg-opacity-30 rounded-xl p-3 flex flex-col items-start hover:shadow-neon transition">
-  <span class="text-sm font-bold mb-1 text-green-400">Type:</span>
-  <span class="text-lg font-semibold">
-    Takeaway: {{ orderTypes.takeaway }}
-    <span class="text-xs text-gray-400">({{ orderTypes.takeawayPercent }}%)</span>
-    /
-    Delivery: {{ orderTypes.delivery }}
-    <span class="text-xs text-gray-400">({{ orderTypes.deliveryPercent }}%)</span>
-  </span>
-</div>
+            <!-- Stats grid -->
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-6 text-gray-300 w-full">
+              <div
+                class="bg-gray-800 bg-opacity-30 rounded-xl p-3 flex flex-col items-start hover:shadow-neon transition"
+              >
+                <span class="text-sm font-bold mb-1 text-blue-400">Last Ordered:</span>
+                <span class="text-lg font-semibold">
+                  {{ lastOrdered.daysAgo }}
+                  <span class="text-xs text-gray-400">{{ lastOrdered.fullDate }}</span>
+                </span>
+              </div>
+              <div
+                class="bg-gray-800 bg-opacity-30 rounded-xl p-3 flex flex-col items-start hover:shadow-neon transition"
+              >
+                <span class="text-sm font-bold mb-1 text-purple-400">Total:</span>
+                <span class="text-lg font-semibold">
+                  € {{ totalStats.total.toFixed(2) }}
+                  <span class="text-xs text-gray-400">({{ totalStats.count }} Orders)</span>
+                </span>
+              </div>
 
-          <div class="bg-gray-800 bg-opacity-30 rounded-xl p-3 flex flex-col items-start hover:shadow-neon transition">
-            <span class="text-sm font-bold mb-1 text-yellow-400">Promo Codes:</span>
-            <span class="text-lg font-semibold">0 <span class="text-xs text-gray-400">(0%)</span></span>
+              <div
+                class="bg-gray-800 bg-opacity-30 rounded-xl p-3 flex flex-col items-start hover:shadow-neon transition"
+              >
+                <span class="text-sm font-bold mb-1 text-pink-400">Average Order:</span>
+                <span class="text-lg font-semibold">
+                  € {{ averageOrder.average.toFixed(2) }}
+                  <span class="text-xs text-gray-400">({{ averageOrder.avgItems.toFixed(0) }} Items)</span>
+                </span>
+              </div>
+              <div
+                class="bg-gray-800 bg-opacity-30 rounded-xl p-3 flex flex-col items-start hover:shadow-neon transition"
+              >
+                <span class="text-sm font-bold mb-1 text-green-400">Type:</span>
+                <span class="text-lg font-semibold">
+                  Takeaway: {{ orderTypes.takeaway }}
+                  <span class="text-xs text-gray-400">({{ orderTypes.takeawayPercent }}%)</span>
+                  / Delivery: {{ orderTypes.delivery }}
+                  <span class="text-xs text-gray-400">({{ orderTypes.deliveryPercent }}%)</span>
+                </span>
+              </div>
+
+              <div
+                class="bg-gray-800 bg-opacity-30 rounded-xl p-3 flex flex-col items-start hover:shadow-neon transition"
+              >
+                <span class="text-sm font-bold mb-1 text-yellow-400">Promo Codes:</span>
+                <span class="text-lg font-semibold">0 <span class="text-xs text-gray-400">(0%)</span></span>
+              </div>
+              <div
+                class="bg-gray-800 bg-opacity-30 rounded-xl p-3 flex flex-col items-start hover:shadow-neon transition"
+              >
+                <span class="text-sm font-bold mb-1 text-red-500">Complaints:</span>
+                <span class="text-lg font-semibold">
+                  {{ complaintStats.count }}
+                  <span class="text-xs text-gray-400">({{ complaintStats.percent }}%)</span>
+                </span>
+              </div>
+            </div>
           </div>
-          <div class="bg-gray-800 bg-opacity-30 rounded-xl p-3 flex flex-col items-start hover:shadow-neon transition">
-  <span class="text-sm font-bold mb-1 text-red-500">Complaints:</span>
-  <span class="text-lg font-semibold">
-    {{ complaintStats.count }}
-    <span class="text-xs text-gray-400">({{ complaintStats.percent }}%)</span>
-  </span>
-</div>
-
         </div>
       </div>
-    </div>
-  </div>
-</h3>
+    </h3>
 
     <div v-if="isLoading" class="flex justify-center items-center py-8">
       <VaSpinner size="large" color="primary" />
@@ -178,92 +187,89 @@
 
           <!-- Complaints list -->
           <div v-if="order.complaint" class="ml-10">
-  <div
-    class="flex flex-col items-center justify-center text-sm text-center cursor-pointer 
-           rounded-lg transition-colors duration-200 group hover:bg-gray-200 p-2 w-34"
-    @click.stop="editComplaint(order._id, order.complaint)"
-  >
-    <span class="flex items-center justify-center">
-      <TriangleAlert class="w-9 h-9 fill-red-600 stroke-white" />
-    </span>
-    <span
-      class="font-semibold truncate"
-      style="
-        max-width: 150px;
-        display: inline-block;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      "
-    >
-      Complaint
-    </span>
-  </div>
-</div>
+            <div
+              class="flex flex-col items-center justify-center text-sm text-center cursor-pointer rounded-lg transition-colors duration-200 group hover:bg-gray-200 p-2 w-34"
+              @click.stop="editComplaint(order._id, order.complaint)"
+            >
+              <span class="flex items-center justify-center">
+                <TriangleAlert class="w-9 h-9 fill-red-600 stroke-white" />
+              </span>
+              <span
+                class="font-semibold truncate"
+                style="
+                  max-width: 150px;
+                  display: inline-block;
+                  white-space: nowrap;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                "
+              >
+                Complaint
+              </span>
+            </div>
+          </div>
 
+          <div class="flex items-center gap-1 ml-auto opacity-0 group-hover:opacity-100 transition mr-5">
+            <span
+              v-if="!order.complaint || order.complaint === ''"
+              class="flex items-center gap-1 rounded-full text-black px-2 py-1.5 font-semibold text-xs cursor-pointer bg-gray-100 hover:bg-gray-300 transition-colors"
+              @click.stop="openComplaint(order._id)"
+            >
+              <TriangleAlert class="w-4 h-4 text-red-600" /> Add Complaint
+            </span>
 
+            <span
+              size="small"
+              class="flex items-center gap-1 rounded-full text-black px-2 py-1.5 font-semibold text-xs cursor-pointer bg-gray-100 hover:bg-gray-300 transition-colors"
+              @click.stop="openNote(order._id, order.note)"
+            >
+              <NotepadText class="w-4 h-4" /> Add Note
+            </span>
 
-<div class="flex items-center gap-1 ml-auto opacity-0 group-hover:opacity-100 transition mr-5">
-  <span
-    v-if="!order.complaint || order.complaint === ''"
-    class="flex items-center gap-1 rounded-full text-black px-2 py-1.5 font-semibold text-xs cursor-pointer bg-gray-100 hover:bg-gray-300 transition-colors"
-    @click.stop="openComplaint(order._id)"
-  >
-    <TriangleAlert class="w-4 h-4 text-red-600" /> Add Complaint
-  </span>
+            <span
+              size="small"
+              class="flex items-center gap-1 rounded-full text-black px-2 py-1.5 font-semibold text-xs cursor-pointer bg-gray-100 hover:bg-gray-300 transition-colors"
+              @click.stop="openConfirm('repeat', order._id)"
+            >
+              <CopyPlus class="w-4 h-4" /> Repeat Order
+            </span>
 
-  <span
-    size="small"
-    class="flex items-center gap-1 rounded-full text-black px-2 py-1.5 font-semibold text-xs cursor-pointer bg-gray-100 hover:bg-gray-300 transition-colors"
-    @click.stop="openNote(order._id, order.note)"
-  >
-    <NotepadText class="w-4 h-4" /> Add Note
-  </span>
+            <span
+              size="small"
+              class="flex items-center gap-1 rounded-full text-white px-2 py-1.5 font-semibold text-xs cursor-pointer bg-green-700 hover:bg-green-900 transition-colors"
+              @click.stop="openConfirm('add', order._id)"
+            >
+              <Plus class="w-4 h-4" /> Add Items
+            </span>
 
-  <span
-    size="small"
-    class="flex items-center gap-1 rounded-full text-black px-2 py-1.5 font-semibold text-xs cursor-pointer bg-gray-100 hover:bg-gray-300 transition-colors"
-    @click.stop="openConfirm('repeat', order._id)"
-  >
-    <CopyPlus class="w-4 h-4" /> Repeat Order
-  </span>
+            <span
+              size="small"
+              class="flex items-center gap-1 rounded-full text-white px-2 py-1.5 font-semibold text-xs cursor-pointer bg-red-600 hover:bg-red-800 transition-colors"
+              @click.stop="openConfirm('cancel', order._id)"
+            >
+              <X class="w-4 h-4" /> Cancel Order
+            </span>
+          </div>
 
-  <span
-    size="small"
-    class="flex items-center gap-1 rounded-full text-white px-2 py-1.5 font-semibold text-xs cursor-pointer bg-green-700 hover:bg-green-900 transition-colors"
-    @click.stop="openConfirm('add', order._id)"
-  >
-    <Plus class="w-4 h-4" /> Add Items
-  </span>
-
-  <span
-    size="small"
-    class="flex items-center gap-1 rounded-full text-white px-2 py-1.5 font-semibold text-xs cursor-pointer bg-red-600 hover:bg-red-800 transition-colors"
-    @click.stop="openConfirm('cancel', order._id)"
-  >
-    <X class="w-4 h-4" /> Cancel Order
-  </span>
-</div>
-
-<span
-  class="px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide flex items-center gap-1 transition-colors"
-  :class="{
-    'bg-green-600 text-white': order.status === 'Completed',
-    'bg-yellow-500 text-white': order.status === 'In Progress',
-    'bg-red-600 text-white': order.status === 'Cancelled',
-  }"
->
-  <template v-if="order.status === 'Completed'">
-    <CheckCircle class="w-3.5 h-3.5" />
-  </template>
-  <template v-else-if="order.status === 'In Progress'">
-    <Loader2 class="w-3.5 h-3.5 animate-spin-slow" />
-  </template>
-  <template v-else-if="order.status === 'Cancelled'">
-    <XCircle class="w-3.5 h-3.5" />
-  </template>
-  {{ order.status }}
-</span>
+          <span
+            class="px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide flex items-center gap-1 transition-colors"
+            :class="{
+              'bg-green-600 text-white': order.status === 'Completed',
+              'bg-yellow-500 text-white': order.status === 'In Progress',
+              'bg-red-600 text-white': order.status === 'Cancelled',
+            }"
+          >
+            <template v-if="order.status === 'Completed'">
+              <CheckCircle class="w-3.5 h-3.5" />
+            </template>
+            <template v-else-if="order.status === 'In Progress'">
+              <Loader2 class="w-3.5 h-3.5 animate-spin-slow" />
+            </template>
+            <template v-else-if="order.status === 'Cancelled'">
+              <XCircle class="w-3.5 h-3.5" />
+            </template>
+            {{ order.status }}
+          </span>
         </div>
 
         <!-- EXPANDABLE ARTICLE LIST -->
@@ -520,7 +526,6 @@ const isLoading = ref(true)
 const selectedItems = reactive({})
 const selectedPeriod = ref('1 Month')
 
-
 const isConfirmOpen = ref(false)
 const confirmAction = ref(null)
 const confirmOrderId = ref(null)
@@ -635,79 +640,159 @@ const removeSelected = async (orderId) => {
   const order = orders.value.find((o) => o._id === orderId)
   if (!order) return
 
-  const items = (selectedItems[orderId] || []).map((i) => order.menuItems[i])
-  if (!items.length) return
+  // indexes picked in the UI
+  const menuLines = (selectedItems && selectedItems[orderId] ? selectedItems[orderId] : [])
+    .map((i) => order.menuItems[i])
+    .filter(Boolean)
 
-  const payload = buildOfferMenuItemsPayload(items)
-  console.log(payload)
+  const offerLines = (selectedOfferItems && selectedOfferItems[orderId] ? selectedOfferItems[orderId] : [])
+    .map((i) => (order.offerDetails ? order.offerDetails[i] : null))
+    .filter(Boolean)
 
-  // Await all API calls in parallel and wait for all to finish
-  await Promise.all(
-    payload.menuItems.map((item) => {
-      const data = {
+  if (!menuLines.length && !offerLines.length) return
+
+  // 1) delete MENU lines (include options so we target the exact ticket line)
+  if (menuLines.length) {
+    const deletes = menuLines.map((mi) => {
+      const menuItemId = (mi && mi.menuItem && (mi.menuItem._id || mi.menuItem)) || mi.menuItemId || mi._id
+
+      // options can be stored either as `mi.options` or derived from `articlesOptionsGroup`
+      let options = []
+      if (Array.isArray(mi && mi.options) && mi.options.length) {
+        options = mi.options.map((o) => ({
+          option: (o && o.option && (o.option._id || o.option)) || o._id,
+          quantity: (o && o.quantity) || 1,
+        }))
+      } else if (Array.isArray(mi && mi.articlesOptionsGroup)) {
+        options = mi.articlesOptionsGroup
+          .flatMap((g) => (g && Array.isArray(g.articlesOptions) ? g.articlesOptions : []))
+          .filter((opt) => opt && opt.selected)
+          .map((opt) => ({
+            option: opt.optionId || opt._id || opt.option,
+            quantity: opt.quantity || 1,
+          }))
+      }
+
+      const payload = {
         menuItems: [
           {
-            menuItem: item.menuItem,
+            menuItem: String(menuItemId),
+            quantity: mi.quantity || 1,
+            options,
           },
         ],
       }
-      return applyOrderEdit(orderId, 'delete', order.tableNumber, data)
-    }),
-  )
 
-  fetchOrders()
+      return applyOrderEdit(orderId, 'delete', order.tableNumber, payload)
+    })
+
+    await Promise.all(deletes)
+  }
+
+  // 2) delete OFFER blocks (no inner items for delete)
+  if (offerLines.length) {
+    const offerMenuItems = offerLines.map((of) => ({
+      offerId: String((of && of.offerId) || (of && of._id)),
+      quantity: 1,
+    }))
+    await applyOrderEdit(orderId, 'delete', order.tableNumber, { offerMenuItems })
+  }
+
+  await fetchOrders()
 }
-
 const editSelected = async (orderId) => {
   const order = orders.value.find((o) => o._id === orderId)
   if (!order) return
 
-  // const items = (selectedItems[orderId] || []).map((i) => order.menuItems[i])
-  // if (!items.length) return
+  // Use selected menu/offer indices; if none selected, fall back to all menu items
+  const menuIdx = (selectedItems && selectedItems[orderId]) || []
+  const offerIdx = (selectedOfferItems && selectedOfferItems[orderId]) || []
 
-  // console.log('Edit items:', items)
+  const items = (menuIdx.length ? menuIdx : order.menuItems.map((_, i) => i))
+    .map((i) => order.menuItems[i])
+    .filter(Boolean)
 
-  const data = order.menuItems.map((menuItem) => {
+  const offers = order.offerDetails && offerIdx.length ? offerIdx.map((i) => order.offerDetails[i]).filter(Boolean) : []
+
+  // Build originals for later delete->add
+  const originalMenuItems = items.map((mi) => {
+    const menuItemId = (mi && mi.menuItem && (mi.menuItem._id || mi.menuItem)) || mi.menuItemId || mi._id
+
+    let options = []
+    if (Array.isArray(mi && mi.options) && mi.options.length) {
+      options = mi.options.map((o) => ({
+        option: (o && o.option && (o.option._id || o.option)) || o._id,
+        quantity: (o && o.quantity) || 1,
+      }))
+    } else if (Array.isArray(mi && mi.articlesOptionsGroup)) {
+      options = mi.articlesOptionsGroup
+        .flatMap((g) => (g && Array.isArray(g.articlesOptions) ? g.articlesOptions : []))
+        .filter((opt) => opt && opt.selected)
+        .map((opt) => ({
+          option: opt.optionId || opt._id || opt.option,
+          quantity: opt.quantity || 1,
+        }))
+    }
+
     return {
-      orderId: orderId,
-      itemId: menuItem._id,
-      itemName: menuItem.menuItem,
-      basePrice: parseFloat(menuItem.price) || 0,
-      totalPrice: 0,
-      imageUrl: menuItem.imageUrl || '',
-      promotionCode: menuItem.promotionCode || '',
-      isRepeatedOrder: true,
-      quantity: menuItem.quantity,
-      isFree: !!menuItem.isFree,
-      selectedOptions: menuItem.articlesOptionsGroup
-        .filter((group) => {
-          const doesGroupHasOptions = group.articlesOptions.filter((opt) => opt.selected)
-          return doesGroupHasOptions.length > 0
-        })
-        .map((group) => {
-          return {
-            groupId: group._id,
-            groupName: group.name,
-            categoryId: menuItem.categories.length > 0 ? menuItem.categories[0].id : null,
-            menuItemId: menuItem._id,
-            selected: group.articlesOptions
-              .filter((opt) => opt.selected)
-              .map((opt) => ({
-                ...opt,
-                optionId: opt._id,
-                optionName: opt.name,
-                price: parseFloat(opt.price) || 0,
-                type: opt.type,
-                quantity: opt.quantity || 1,
-              })),
-          }
-        }),
+      menuItem: String(menuItemId),
+      quantity: mi.quantity || 1,
+      options,
     }
   })
 
+  const originalOffersToDelete = offers.map((of) => ({
+    offerId: String((of && of.offerId) || (of && of._id)),
+    quantity: 1,
+  }))
+
+  // Prefill cart ONLY with selected menu items (offers stay stashed; we’ll re-add later)
+  const data = items.map((menuItem) => ({
+    orderId: orderId,
+    itemId: menuItem._id,
+    itemName: menuItem.menuItem,
+    basePrice: parseFloat(menuItem.price) || 0,
+    totalPrice: 0,
+    imageUrl: menuItem.imageUrl || '',
+    promotionCode: menuItem.promotionCode || '',
+    isRepeatedOrder: true,
+    quantity: menuItem.quantity,
+    isFree: !!menuItem.isFree,
+    selectedOptions: (menuItem.articlesOptionsGroup || [])
+      .map((group) => {
+        const selected = (group.articlesOptions || [])
+          .filter((opt) => opt && opt.selected)
+          .map((opt) => ({
+            ...opt,
+            optionId: opt._id,
+            optionName: opt.name,
+            price: parseFloat(opt.price) || 0,
+            type: opt.type,
+            quantity: opt.quantity || 1,
+          }))
+        if (!selected.length) return null
+        return {
+          groupId: group._id,
+          groupName: group.name,
+          categoryId: menuItem.categories && menuItem.categories.length > 0 ? menuItem.categories[0].id : null,
+          menuItemId: menuItem._id,
+          selected,
+        }
+      })
+      .filter(Boolean),
+  }))
+
   const orderStore = useOrderStore()
-  orderStore.addEditOrder(order)
-  data.map((e) => {
+  const orderForStore = {
+    ...order,
+    _editContext: {
+      originalMenuItems,
+      originalOffersToDelete,
+    },
+  }
+  orderStore.addEditOrder(orderForStore)
+
+  data.forEach((e) => {
     orderStore.addItemToCart(e)
     const newIndex = orderStore.cartItems.length - 1
     orderStore.calculateItemTotal(newIndex)
@@ -1004,16 +1089,14 @@ const filteredOrders = computed(() => {
   if (!orders.value || !orders.value.length) return []
 
   const startDate = periodStartDate.value
-  return orders.value.filter(o => o.status === 'Completed' && new Date(o.createdAt) >= startDate)
+  return orders.value.filter((o) => o.status === 'Completed' && new Date(o.createdAt) >= startDate)
 })
 
 // Last Ordered
 const lastOrdered = computed(() => {
   if (!filteredOrders.value.length) return { daysAgo: 'No Orders', fullDate: '' }
 
-  const sorted = [...filteredOrders.value].sort(
-    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-  )
+  const sorted = [...filteredOrders.value].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
   const last = sorted[0]
 
   const lastDate = new Date(last.createdAt)
@@ -1022,8 +1105,7 @@ const lastOrdered = computed(() => {
   today.setHours(0, 0, 0, 0)
 
   const diffDays = Math.round((today - lastDate) / (1000 * 60 * 60 * 24))
-  const daysAgoText =
-    diffDays === 0 ? 'Today' : diffDays === 1 ? '1 day ago' : `${diffDays} days ago`
+  const daysAgoText = diffDays === 0 ? 'Today' : diffDays === 1 ? '1 day ago' : `${diffDays} days ago`
 
   return {
     daysAgo: daysAgoText,
@@ -1040,8 +1122,8 @@ const totalStats = computed(() => {
 
 // Type
 const orderTypes = computed(() => {
-  const takeaway = filteredOrders.value.filter(o => o.orderType?.toLowerCase() === 'takeaway').length
-  const delivery = filteredOrders.value.filter(o => o.orderType?.toLowerCase() === 'delivery').length
+  const takeaway = filteredOrders.value.filter((o) => o.orderType?.toLowerCase() === 'takeaway').length
+  const delivery = filteredOrders.value.filter((o) => o.orderType?.toLowerCase() === 'delivery').length
   const total = takeaway + delivery
 
   return {
@@ -1066,19 +1148,17 @@ const averageOrder = computed(() => {
 
 // Promo Codes
 const promoStats = computed(() => {
-  const count = filteredOrders.value.filter(o => o.promoCodeApplied).length
+  const count = filteredOrders.value.filter((o) => o.promoCodeApplied).length
   const percent = filteredOrders.value.length ? Math.round((count / filteredOrders.value.length) * 100) : 0
   return { count, percent }
 })
 
 // Complaints
 const complaintStats = computed(() => {
-  const count = filteredOrders.value.filter(o => o.complaint && o.complaint.trim() !== '').length
+  const count = filteredOrders.value.filter((o) => o.complaint && o.complaint.trim() !== '').length
   const percent = filteredOrders.value.length ? Math.round((count / filteredOrders.value.length) * 100) : 0
   return { count, percent }
 })
-
-
 
 onMounted(() => {
   fetchUsers()
