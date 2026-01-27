@@ -8,19 +8,19 @@
     hide-default-actions
     :close-button="!redirectUrl"
   >
-    <div class="grid grid-cols-1 md:grid-cols-3 h-full bg-gray-50">
-      <!-- Order Summary -->
-      <div class="md:col-span-1 flex flex-col">
-        <div class="p-4 h-full flex flex-col">
-          <h3 class="va-h3">Order Summary</h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 h-full min-h-0 bg-gray-50">
+      <!-- Order Details -->
+      <div class="md:col-span-1 flex flex-col h-full min-h-0">
+        <div class="p-4 flex flex-col h-full min-h-0">
+          <h3 class="va-h3">Order Details</h3>
 
-          <div class="order-items order-items-wrapper overflow-y-auto flex-grow">
+          <div class="order-items order-items-wrapper overflow-y-auto flex-1 min-h-0 basis-0 h-0">
             <div v-for="(item, index) in orderStore.cartItems" :key="item.itemId" class="order-item">
               <div class="item-main">
                 <div class="item-details">
                   <div class="flex-1 px-2">
                     <div class="flex justify-between items-center">
-                      <span class="item-qty-name">{{ item.quantity }}x {{ item.itemName }}</span>
+                      <span class="item-qty-name">{{ item.quantity }} x {{ item.itemName }}</span>
                     </div>
 
                     <!-- Options -->
@@ -45,33 +45,25 @@
                           }"
                         >
                           {{ option.name }}
-                          <span v-if="option.price">(+€{{ (option.price * option.quantity).toFixed(2) }})</span>
+                          <span v-if="option.price">€{{ (option.price * option.quantity).toFixed(2) }}</span>
                         </span>
                       </div>
                     </div>
-
-                    <!-- Base Info -->
-                    <p class="text-[11px] text-gray-500 mt-1 italic">
-                      Base: €{{ item.basePrice.toFixed(2) }} + €{{ item.selectionTotalPrice.toFixed(2) }} * = €{{
-                        item.totalPrice.toFixed(2) / item.quantity
-                      }}
-                      each
-                    </p>
                   </div>
                 </div>
 
                 <div class="item-total-price">
                   <template v-if="promoTotal">
                     <template v-if="cartItemPromoDisplay(item, index).affected">
-                      <span class="original-price">€{{ cartItemPromoDisplay(item, index).original.toFixed(2) }}</span>
-                      <span class="updated-price">€{{ cartItemPromoDisplay(item, index).updated.toFixed(2) }}</span>
+                      <span class="original-price">{{ cartItemPromoDisplay(item, index).original.toFixed(2) }} € </span>
+                      <span class="updated-price">{{ cartItemPromoDisplay(item, index).updated.toFixed(2) }} €</span>
                     </template>
                     <template v-else>
-                      <span class="font-semibold text-green-800">€{{ item.totalPrice.toFixed(2) }}</span>
+                      <span class="font-semibold text-green-800">{{ item.totalPrice.toFixed(2) }} €</span>
                     </template>
                   </template>
                   <template v-else>
-                    <span class="font-semibold text-green-800">€{{ item.totalPrice.toFixed(2) }}</span>
+                    <span class="font-semibold text-green-800">{{ item.totalPrice.toFixed(2) }} €</span>
                   </template>
                 </div>
               </div>
@@ -123,148 +115,150 @@
                     </div>
                   </div>
 
-                  <div class="item-base-price">
-                    Base price: €{{ item.price.toFixed(2) }} + €{{ item.selectionTotalPrice.toFixed(2) }} for addons
-                  </div>
                 </div>
 
                 <div class="item-total-price">
                   <template v-if="offerPromoDisplay(item, index).affected">
-                    <span class="original-price">€{{ offerPromoDisplay(item, index).original.toFixed(2) }}</span>
-                    <span class="updated-price">€{{ offerPromoDisplay(item, index).updated.toFixed(2) }}</span>
+                    <span class="original-price">{{ offerPromoDisplay(item, index).original.toFixed(2) }} €</span>
+                    <span class="updated-price">{{ offerPromoDisplay(item, index).updated.toFixed(2) }} €</span>
                   </template>
                   <template v-else>
-                    <span class="font-semibold text-green-800">€{{ item.totalPrice.toFixed(2) }}</span>
+                    <span class="font-semibold text-green-800">{{ item.totalPrice.toFixed(2) }} €</span>
                   </template>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="summary-totals flex-shrink-0">
+          <div class="summary-totals flex-none pt-3">
             <div class="total-row">
               <span>Subtotal:</span>
-              <span>€{{ subtotal.toFixed(2) }}</span>
+              <span>{{ subtotal.toFixed(2) }} €</span>
             </div>
             <div v-if="orderType === 'delivery'" class="total-row">
               <span>Delivery Fee:</span>
-              <span>€{{ deliveryFee.toFixed(2) }}</span>
+              <span>{{ deliveryFee.toFixed(2) }} €</span>
             </div>
             <div v-if="promoTotal" class="total-row">
-              <span>Total Discount:</span>
-              <span>- €{{ (promoTotal.originalTotal - promoTotal.updatedTotal).toFixed(2) }}</span>
+              <span class="text-red-600">Discount:</span>
+              <span class="text-red-600">- {{ (promoTotal.originalTotal - promoTotal.updatedTotal).toFixed(2) }} €</span>
             </div>
-            <div class="total-row total-final">
+            <div class="total-row total-final !text-2xl">
               <span v-if="orderStore.editOrder"
                 >Total:
-                <span class="text-green-600">PAID AMOUNT: €{{ orderStore.editOrder.editOrderTotal.toFixed(2) }}</span>
+                <span class="text-green-600">PAID AMOUNT: {{ orderStore.editOrder.editOrderTotal.toFixed(2) }} €</span>
               </span>
               <span v-else>Total:</span>
-              <span v-if="orderStore.editOrder">Balance €{{ getTotalPrice }}</span>
-              <span v-else-if="!promoTotal">€{{ (totalAmount + deliveryFee).toFixed(2) }}</span>
-              <span v-else>€{{ promoTotal.updatedTotal.toFixed(2) }}</span>
+              <span v-if="orderStore.editOrder">Balance {{ getTotalPrice }} €</span>
+              <span v-else-if="!promoTotal">{{ (totalAmount + deliveryFee).toFixed(2) }} €</span>
+              <span v-else>{{ promoTotal.updatedTotal.toFixed(2) }} €</span>
             </div>
           </div>
         </div>
       </div>
-      <!-- Payment Section -->
-      <div v-if="!redirectUrl" class="md:col-span-2 flex flex-col bg-white relative">
+      <!-- Outlet & Type & Time -->
+      <div v-if="!redirectUrl" class="relative flex flex-col md:col-span-2">
         <div v-if="apiLoading" class="absolute inset-0 z-50 flex items-center justify-center bg-white/50">
           <div class="loading-spinner !w-16 !h-16 border-4 !border-gray-300 !border-t-gray-600"></div>
         </div>
-        <div class="header-container">
+        <div class="pt-4">
           <h3 class="va-h3">{{ etaTime }}</h3>
         </div>
 
-        <div class="payment-content flex-grow">
-          <div class="payment-options grid sm:grid-cols-2 gap-4">
-            <div
-              v-for="payment in paymentTypes.filter((a) => userDetails.paymentType.includes(a.paymentTypeId))"
-              :key="payment.paymentTypeId"
-              class="payment-option"
-              :class="selectedPayment == payment ? 'selected' : ''"
-              @click="selectedPayment = payment"
-            >
-              <div class="payment-icon">{{ payment.name === 'Cash' ? '💵' : '💳' }}</div>
-              <div class="payment-label">{{ payment.name }}</div>
-              <div class="payment-desc">
-                {{ payment.name === 'Cash' ? 'Pay with cash on delivery or pickup' : 'Secure payment with Visa/Card' }}
-              </div>
-            </div>
-          </div>
-
-          <!-- Cash Denomination Selector -->
-          <div v-if="selectedPayment?.name?.toLowerCase() === 'cash'" class="cash-denominations-section">
-            <h4 class="text-lg font-semibold mb-3 text-gray-700">Cash Amount Received:</h4>
-            <div class="denominations-grid">
-              <button
-                v-for="amount in cashDenominations"
-                :key="amount"
-                class="denomination-btn"
-                :class="{ selected: selectedCashAmount === amount }"
-                @click="selectedCashAmount = amount"
-              >
-                {{ amount.toFixed(2) }}
-              </button>
-            </div>
-
-            <div v-if="selectedCashAmount" class="change-info">
-              <div class="change-row">
-                <span>Order Total:</span>
-                <span class="font-bold">€{{ finalTotal.toFixed(2) }}</span>
-              </div>
-              <div class="change-row">
-                <span>Cash Received:</span>
-                <span class="font-bold">€{{ selectedCashAmount.toFixed(2) }}</span>
-              </div>
-              <div class="change-row total-change">
-                <span>Change to Give:</span>
-                <span class="font-bold" :class="changeAmount >= 0 ? 'text-blue-600' : 'text-red-600'">
-                  €{{ changeAmount.toFixed(2) }}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="action-container">
-          <div class="flex gap-2 w-full justify-center">
-            <button v-if="orderId" class="btn btn-flat-danger mr-2" :disabled="apiLoading" @click="cancelOrder()">
-              Cancel Order
-            </button>
-            <button
-              id="confirmBtn"
-              :disabled="apiLoading || !selectedPayment"
-              class="btn btn-primary"
-              @click="orderStore.editOrder ? updateOrder() : createOrder()"
-            >
-              <span v-if="!apiLoading" id="btnText">
-                {{ orderId && selectedPayment?.name.includes('Card') ? 'Retry Payment' : 'Payment' }}
-              </span>
-              <div v-if="apiLoading" id="loadingSpinner" class="loading-spinner animate-spin"></div>
-            </button>
-          </div>
+        <!-- Payment Types & Keypad -->
+<div class="flex-grow min-h-0 overflow-hidden pt-0 pr-4 pb-4">
+  <div class="grid h-full min-h-0 grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- Left pane: payment types -->
+<div class="flex flex-col h-full min-h-0">
+  <!-- Card container like Order Items -->
+  <div class="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col flex-1 min-h-0">
+    <div class="p-4 flex-1 min-h-0 overflow-y-auto">
+      <div class="payment-options grid gap-2 sm:grid-cols-2">
+        <div
+          v-for="payment in paymentTypes.filter((a) => userDetails.paymentType.includes(a.paymentTypeId))"
+          :key="payment.paymentTypeId"
+          class="payment-option transition-all p-4 flex items-center justify-center text-center"
+          :class="selectedPayment == payment ? 'selected' : ''"
+          @click="selectedPayment = payment"
+        >
+          <div class="payment-label font-bold text-lg">{{ payment.name }}</div>
         </div>
       </div>
-      <div v-else class="col-span-2 flex flex-col bg-white h-full">
-        <div class="flex-grow relative">
-          <iframe :src="redirectUrl" width="100%" height="100%" class="border-none" />
+    </div>
+  </div>
+
+  <!-- Payment button -->
+  <div class="pt-4">
+    <button
+      id="confirmBtn"
+      :disabled="apiLoading || !selectedPayment"
+      class="btn btn-primary !w-full !min-w-0 py-2 !text-2xl"
+      @click="orderStore.editOrder ? updateOrder() : createOrder()"
+    >
+      <span v-if="!apiLoading" id="btnText">Payment</span>
+      <div v-if="apiLoading" id="loadingSpinner" class="loading-spinner animate-spin"></div>
+    </button>
+  </div>
+</div>
+
+    <!-- Right pane -->
+    <div class=" p-4 gap-3 bg-white rounded-xl border border-gray-200 shadow-sm h-full min-h-0 overflow-hidden flex flex-col">
+  <div class="bg-white p-3 rounded-lg border border-gray-300 text-right shadow-inner">
+    <div class="text-3xl font-bold text-gray-800">€ {{ (selectedCashAmount || 0).toFixed(2) }}</div>
+    <div class="text-3xl mt-1" :class="changeAmount >= 0 ? 'text-green-600' : 'text-red-600'">
+      Change: € {{ changeAmount.toFixed(2) }}
+  </div>
+</div>
+
+<div class="flex-1 min-h-0 flex flex-col gap-3">
+  <!-- Denominations -->
+  <div class="grid grid-cols-3 gap-2 flex-1 min-h-0 auto-rows-fr">
+    <button
+      v-for="amount in cashDenominations"
+      :key="amount"
+      class="py-2 bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 font-bold text-gray-700 shadow-sm active:translate-y-0.5 transition-all text-2xl h-full"
+      @click="handleDenominationClick(amount)"
+    >
+      {{ amount.toFixed(2) }}
+    </button>
+  </div>
+
+  <!-- Keypad -->
+  <div class="grid grid-cols-3 gap-2 flex-[2] min-h-0 auto-rows-fr">
+    <button v-for="n in ['7','8','9']" :key="n" class="key-btn bg-gray-200 hover:bg-gray-300 h-full" @click="handleKeypadInput(n)">{{ n }}</button>
+    <button v-for="n in ['4','5','6']" :key="n" class="key-btn bg-gray-200 hover:bg-gray-300 h-full" @click="handleKeypadInput(n)">{{ n }}</button>
+    <button v-for="n in ['1','2','3']" :key="n" class="key-btn bg-gray-200 hover:bg-gray-300 h-full" @click="handleKeypadInput(n)">{{ n }}</button>
+
+    <button class="key-btn bg-gray-200 hover:bg-gray-300 h-full" @click="handleKeypadInput('0')">0</button>
+    <button class="key-btn bg-gray-200 hover:bg-gray-300 h-full" @click="handleKeypadInput('.')">.</button>
+    <button class="key-btn bg-gray-400 hover:bg-gray-500 text-white h-full" @click="handleKeypadInput('backspace')">
+      <span class="text-2xl">⌫</span>
+    </button>
+  </div>
+</div>
+    </div>
+  </div>
+</div>
+      </div>
+
+      <!-- SaferPay Iframe Section -->
+      <div v-if="redirectUrl" class="col-span-2 flex flex-col bg-white h-full">
+        <div class="flex-grow relative py-16">
+          <iframe :src="redirectUrl" width="100%" height="100%" class="border-none"/>
           <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
-            <div class="loading-spinner !w-16 !h-16 border-4 !border-gray-300 !border-t-gray-600"></div>
+            
           </div>
         </div>
         <div class="p-4 border-t border-gray-200 flex justify-between items-center bg-gray-50">
           <span class="text-sm text-gray-500 flex items-center gap-2">
-            <div class="loading-spinner !border-gray-300 !border-t-gray-600"></div>
-            Payment in progress...
+            
           </span>
           <div class="flex gap-2">
-            <button class="btn btn-flat-danger text-sm px-4 py-2" @click="cancelOrder()">Cancel Order</button>
             <button
               class="btn btn-secondary text-sm px-4 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
               @click="manualRetry()"
             >
-              Try Another Payment
+              Change Payment Type
             </button>
           </div>
         </div>
@@ -310,6 +304,33 @@ const orderFor = computed(() => orderStore.orderFor)
 // Cash payment state
 const selectedCashAmount = ref<number | null>(null)
 const cashDenominations = [5.0, 10.0, 20.0, 50.0, 100.0, 200.0]
+const manualCashString = ref('')
+
+const handleKeypadInput = (input: string) => {
+  if (input === 'backspace') {
+    manualCashString.value = manualCashString.value.slice(0, -1)
+  } else if (input === '.') {
+    if (!manualCashString.value.includes('.')) {
+      manualCashString.value += '.'
+    }
+  } else {
+    // Prevent multiple leading zeros
+    if (manualCashString.value === '0' && input === '0') return
+    if (manualCashString.value === '0' && input !== '.') {
+       manualCashString.value = input
+    } else {
+       manualCashString.value += input
+    }
+  }
+
+  const val = parseFloat(manualCashString.value)
+  selectedCashAmount.value = isNaN(val) ? 0 : val
+}
+
+const handleDenominationClick = (amount: number) => {
+  selectedCashAmount.value = amount
+  manualCashString.value = amount.toString()
+}
 
 const finalTotal = computed(() => {
   if (promoTotal.value) {
@@ -337,11 +358,16 @@ const etaTime = computed(() => {
   etaDate.setMinutes(etaDate.getMinutes() + (promiseTime || 0))
 
   const timeString = etaDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
-  const isFutureOrder = selectedDate.getTime() > now.getTime() + 30 * 60 * 1000
+
+const isScheduled = orderFor.value !== 'current'
+
+const isFutureOrder = selectedDate.getTime() > now.getTime() + 30 * 60 * 1000
+
+const showScheduledText = isScheduled || isFutureOrder
 
   const zoneName = orderStore.deliveryZone?.name ? `${orderStore.deliveryZone.name} - ` : ''
 
-  if (isFutureOrder) {
+  if (showScheduledText) {
     const dateString = selectedDate.toLocaleDateString([], {
       day: 'numeric',
 
@@ -1141,12 +1167,13 @@ const promoOfferItemPrice = (item: any, index: number) => {
 }
 
 .order-item {
-  padding: 12px 0;
+  padding: 6px 0;
   border-bottom: 1px solid #f3f4f6;
 }
 
 .order-items-wrapper {
-  max-height: calc(100vh - 350px);
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -1231,7 +1258,7 @@ const promoOfferItemPrice = (item: any, index: number) => {
   justify-content: space-between;
   align-items: center;
   padding: 8px 0;
-  font-size: 15px;
+  font-size: 18px;
 }
 
 .total-row:not(:last-child) {
@@ -1256,20 +1283,10 @@ const promoOfferItemPrice = (item: any, index: number) => {
   text-align: left !important;
 }
 
-.header-container {
-  background: #ffffff;
-  border-bottom: 2px solid #e5e7eb;
-  padding: 16px 32px;
-  display: flex;
-  justify-content: left;
-  align-items: center;
-  flex-shrink: 0;
-}
-
 .payment-content {
   flex: 1;
-  padding: 28px 32px;
-  overflow-y: auto;
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -1309,7 +1326,6 @@ const promoOfferItemPrice = (item: any, index: number) => {
   font-size: 18px;
   font-weight: 600;
   color: #111827;
-  margin-bottom: 6px;
 }
 
 .payment-desc {
@@ -1415,23 +1431,6 @@ const promoOfferItemPrice = (item: any, index: number) => {
   box-shadow: 0 4px 16px rgba(45, 93, 42, 0.2);
 }
 
-.payment-option.selected::after {
-  content: '✓';
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: #2d5d2a;
-  color: white;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  font-weight: bold;
-}
-
 .payment-option:hover {
   border-color: #2d5d2a;
   box-shadow: 0 4px 12px rgba(45, 93, 42, 0.1);
@@ -1440,6 +1439,8 @@ const promoOfferItemPrice = (item: any, index: number) => {
 
 .btn {
   padding: 16px 32px;
+  background: #2d5d2a;
+  color: white;
   border: none;
   border-radius: 8px;
   font-size: 16px;
@@ -1453,7 +1454,10 @@ const promoOfferItemPrice = (item: any, index: number) => {
   width: auto;
   min-width: 200px;
 }
-
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(45, 93, 42, 0.4);
+}
 .btn-primary {
   background: linear-gradient(135deg, #2d5d2a 0%, #1f4a1d 100%);
   color: white;
@@ -1483,8 +1487,7 @@ const promoOfferItemPrice = (item: any, index: number) => {
 
 .action-container {
   background: #f9fafb;
-  padding: 24px 32px;
-  border-top: 2px solid #e5e7eb;
+  padding: 16px 32px;
   display: flex;
   justify-content: center;
   flex-shrink: 0;
@@ -1533,7 +1536,7 @@ const promoOfferItemPrice = (item: any, index: number) => {
   margin-bottom: 20px;
 }
 
-.denomination-btn {
+.denominations-btn {
   padding: 16px 12px;
   border: 2px solid #d1d5db;
   border-radius: 8px;
@@ -1546,14 +1549,14 @@ const promoOfferItemPrice = (item: any, index: number) => {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.denomination-btn:hover {
+.denominations-btn:hover {
   border-color: #2d5d2a;
   background: #f0f7f0;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(45, 93, 42, 0.15);
 }
 
-.denomination-btn.selected {
+.denominations-btn.selected {
   border-color: #2d5d2a;
   background: linear-gradient(135deg, #2d5d2a 0%, #1f4a1d 100%);
   color: white;
@@ -1582,4 +1585,121 @@ const promoOfferItemPrice = (item: any, index: number) => {
   padding-top: 12px;
   font-size: 16px;
 }
+
+/* Keypad Styles */
+.keypad-container {
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 16px;
+}
+
+.keypad-display {
+  background: #f3f4f6;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  text-align: right;
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  border: 2px solid transparent;
+}
+
+.keypad-display:focus-within {
+  border-color: #2d5d2a;
+}
+
+.currency-symbol {
+  color: #6b7280;
+  margin-right: 4px;
+  font-size: 20px;
+}
+
+.keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.key-btn {
+  padding: 12px 4px;
+  font-size: 24px;
+  font-weight: 600;
+  color: #ffffff;
+  background: #1f4a1d;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  height: 100%;     
+  width: 100%;      
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.key-btn:hover {
+  background: #396137;
+}
+
+.key-btn:active {
+  background: #e5e7eb;
+  transform: translateY(1px);
+}
+
+.delete-btn {
+  color: #dc2626;
+  font-weight: bold;
+}
+
+.clear-btn {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fecaca;
+  font-size: 16px;
+  margin-top: 8px;
+  height: 40px;
+}
+
+.clear-btn:hover {
+  background: #fecaca;
+}
+
+/* Make VaModal default close button bigger + more visible */
+.big-xl-xl-modal :deep(.va-modal__close-button),
+.big-xl-xl-modal :deep(.va-modal__close),
+.big-xl-xl-modal :deep(.va-modal__close-btn) {
+  /* Bigger tap target */
+  width: 48px;
+  height: 48px;
+  background: #bd3523;
+  border-radius: 9999px;
+  opacity: 1;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.big-xl-xl-modal :deep(.va-modal__close-button svg),
+.big-xl-xl-modal :deep(.va-modal__close svg),
+.big-xl-xl-modal :deep(.va-modal__close-btn svg),
+.big-xl-xl-modal :deep(.va-icon) {
+  width: 32px;
+  height: 32px;
+  color: #ffffff;
+}
+
+.big-xl-xl-modal :deep(.va-modal__close-button:hover),
+.big-xl-xl-modal :deep(.va-modal__close:hover),
+.big-xl-xl-modal :deep(.va-modal__close-btn:hover) {
+  background: #e06752;
+}
+
+
 </style>
